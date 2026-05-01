@@ -11,13 +11,16 @@ VPS_HOST="145.223.29.87"
 VPS_USER="root"
 APP_DIR="/var/www/saocarlos_erp"
 GIT_REPO="https://github.com/dossantosfilho-rogerio/saocarlos_erp.git"   # ajuste aqui
-GIT_BRANCH="master"
+GIT_BRANCH="main"
 PHP_BIN="php8.3"           # ajuste se necessário (php, php8.2, etc.)
+DOMAIN="frigorificosaocarlos.online"
+DOMAIN_WWW="www.frigorificosaocarlos.online"
 # -----------------------------------------------------------------------------
 
 echo "==> Conectando à VPS $VPS_HOST…"
 
-ssh -o StrictHostKeyChecking=accept-new "$VPS_USER@$VPS_HOST" bash <<REMOTE
+ssh -o StrictHostKeyChecking=accept-new "$VPS_USER@$VPS_HOST" \
+"APP_DIR='$APP_DIR' GIT_REPO='$GIT_REPO' GIT_BRANCH='$GIT_BRANCH' PHP_BIN='$PHP_BIN' DOMAIN='$DOMAIN' DOMAIN_WWW='$DOMAIN_WWW' bash -s" <<'REMOTE'
 set -euo pipefail
 
 # ---- Instalar dependências do sistema (apenas primeira vez) ----------------
@@ -26,7 +29,12 @@ if ! command -v $PHP_BIN &>/dev/null; then
     apt-get install -y -q $PHP_BIN ${PHP_BIN}-cli ${PHP_BIN}-fpm \
         ${PHP_BIN}-sqlite3 ${PHP_BIN}-mbstring ${PHP_BIN}-xml \
         ${PHP_BIN}-curl ${PHP_BIN}-zip ${PHP_BIN}-bcmath \
-        nginx git curl unzip
+        apache2 git curl unzip certbot python3-certbot-apache
+fi
+
+if ! command -v certbot &>/dev/null; then
+    apt-get update -q
+    apt-get install -y -q certbot python3-certbot-apache
 fi
 
 if ! command -v composer &>/dev/null; then
@@ -34,7 +42,15 @@ if ! command -v composer &>/dev/null; then
     mv composer.phar /usr/local/bin/composer
 fi
 
-if ! command -v node &>/dev/null; then
+export COMPOSER_ALLOW_SUPERUSER=1
+
+NODE_MAJOR="0"
+if command -v node &>/dev/null; then
+    NODE_MAJOR="$(node -v | sed -E 's/^v([0-9]+).*/\1/')"
+fi
+
+# Vite do projeto exige Node >= 20.
+if [ "$NODE_MAJOR" -lt 20 ]; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     apt-get install -y -q nodejs
 fi
@@ -74,10 +90,10 @@ npm run build
 
 # ---- Banco de dados ---------------------------------------------------------
 # SQLite: garante que o arquivo existe
-DB_PATH=\$($PHP_BIN artisan tinker --execute="echo config('database.connections.sqlite.database');" 2>/dev/null || true)
-if [[ "\$DB_PATH" == *.sqlite* ]]; then
-    mkdir -p "\$(dirname \$DB_PATH)"
-    touch "\$DB_PATH"
+DB_PATH=$($PHP_BIN artisan tinker --execute="echo config('database.connections.sqlite.database');" 2>/dev/null || true)
+if [[ "$DB_PATH" == *.sqlite* ]]; then
+    mkdir -p "$(dirname $DB_PATH)"
+    touch "$DB_PATH"
 fi
 
 $PHP_BIN artisan migrate --force
@@ -91,55 +107,57 @@ $PHP_BIN artisan view:cache
 chown -R www-data:www-data $APP_DIR/storage $APP_DIR/bootstrap/cache
 chmod -R 775 $APP_DIR/storage $APP_DIR/bootstrap/cache
 
-# ---- Nginx ------------------------------------------------------------------
-NGINX_CONF="/etc/nginx/sites-available/saocarlos_erp"
-if [ ! -f "\$NGINX_CONF" ]; then
-    cat > "\$NGINX_CONF" <<'NGINX'
-server {
-    listen 80;
-    server_name 145.223.29.87;   # troque pelo seu domínio quando tiver
+# ---- Apache -----------------------------------------------------------------
+APACHE_CONF="/etc/apache2/sites-available/saocarlos_erp.conf"
+cat > "$APACHE_CONF" <<'APACHE'
+<VirtualHost *:80>
+    ServerName frigorificosaocarlos.online
+    ServerAlias www.frigorificosaocarlos.online
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/saocarlos_erp/public
 
-    root /var/www/saocarlos_erp/public;
-    index index.php index.html;
+    <Directory /var/www/saocarlos_erp/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
 
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
+    <FilesMatch \.php$>
+        SetHandler "proxy:unix:/run/php/php8.3-fpm.sock|fcgi://localhost/"
+    </FilesMatch>
 
-    charset utf-8;
+    ErrorLog ${APACHE_LOG_DIR}/saocarlos_error.log
+    CustomLog ${APACHE_LOG_DIR}/saocarlos_access.log combined
+</VirtualHost>
+APACHE
 
-    location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
-    }
+a2enmod rewrite headers proxy proxy_fcgi setenvif >/dev/null
+a2enconf php8.3-fpm >/dev/null 2>&1 || true
+a2ensite saocarlos_erp.conf >/dev/null
+a2dissite 000-default.conf >/dev/null 2>&1 || true
 
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
+# Desativa Nginx, caso esteja ativo.
+systemctl stop nginx >/dev/null 2>&1 || true
+systemctl disable nginx >/dev/null 2>&1 || true
 
-    error_page 404 /index.php;
-
-    location ~ \.php\$ {
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;  # ajuste a versão
-        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
-}
-NGINX
-    ln -sf "\$NGINX_CONF" /etc/nginx/sites-enabled/saocarlos_erp
-    rm -f /etc/nginx/sites-enabled/default
-    nginx -t
-    systemctl reload nginx
-    echo "  -> Nginx configurado."
-fi
-
-# ---- PHP-FPM ----------------------------------------------------------------
+# ---- PHP-FPM + Apache -------------------------------------------------------
 systemctl restart php8.3-fpm 2>/dev/null || true
+apache2ctl configtest
+systemctl reload apache2
+
+# ---- HTTPS (Let's Encrypt) --------------------------------------------------
+certbot --apache \
+    -d "$DOMAIN" \
+    -d "$DOMAIN_WWW" \
+    --non-interactive \
+    --agree-tos \
+    --register-unsafely-without-email \
+    --redirect || true
+
+systemctl enable --now certbot.timer >/dev/null 2>&1 || true
 
 echo ""
 echo "=================================================="
 echo "  Deploy concluído com sucesso!"
-echo "  Acesse: http://145.223.29.87"
+echo "  Acesse: https://$DOMAIN"
 echo "=================================================="
 REMOTE
