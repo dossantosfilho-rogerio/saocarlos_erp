@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('producoes', function (Blueprint $table) {
+            $table->id();
+            $table->timestamp('data_producao');
+            $table->decimal('total_insumos_consumidos', 14, 4)->default(0);
+            $table->string('unidade_total_insumos', 10)->default('kg');
+            $table->text('observacoes')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('producoes');
+    }
+};
