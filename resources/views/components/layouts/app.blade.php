@@ -17,16 +17,18 @@
 </head>
 <body class="bg-[#F0EBE0] font-sans antialiased">
 
-    <div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: true }">
+    <div class="min-h-screen lg:flex" x-data="{ sidebarOpen: false }">
+
+        <div x-cloak x-show="sidebarOpen" x-transition.opacity class="fixed inset-0 z-30 bg-[#1A1A1A]/50 lg:hidden" @click="sidebarOpen = false"></div>
 
         {{-- Sidebar --}}
         <aside
-            class="flex flex-col bg-[#2D5A1B] text-white transition-all duration-300 ease-in-out"
-            :class="sidebarOpen ? 'w-64' : 'w-16'"
+            x-cloak
+            class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] -translate-x-full flex-col bg-[#2D5A1B] text-white transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:w-64 lg:max-w-none lg:translate-x-0"
+            :class="sidebarOpen ? 'translate-x-0 shadow-2xl lg:shadow-none' : '-translate-x-full'"
         >
             {{-- Logo / Marca --}}
-            <div class="flex items-center gap-3 px-4 py-5 border-b border-white/10"
-                 :class="sidebarOpen ? 'justify-start' : 'justify-center'">
+            <div class="flex items-center gap-3 border-b border-white/10 px-4 py-5">
                 @if(file_exists(public_path('images/logo.jpg')))
                     <img src="{{ asset('images/logo.jpg') }}" alt="São Carlos"
                          class="h-9 w-9 rounded-full object-cover shrink-0 ring-2 ring-white/30">
@@ -37,12 +39,16 @@
                         </svg>
                     </div>
                 @endif
-                <div x-show="sidebarOpen" x-transition:enter="transition-opacity duration-200 delay-100"
-                     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                     x-transition:leave="transition-opacity duration-100" x-transition:leave-end="opacity-0">
+                <div class="min-w-0">
                     <p class="text-sm font-bold tracking-widest uppercase leading-tight" style="font-family: 'Montserrat', sans-serif;">São Carlos</p>
                     <p class="text-[10px] text-white/50 uppercase tracking-wider">ERP</p>
                 </div>
+
+                <button @click="sidebarOpen = false" class="ml-auto rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white lg:hidden">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
             {{-- Nav --}}
@@ -71,7 +77,7 @@
                               {{ $isActive
                                   ? 'bg-white/15 text-white'
                                   : 'text-white/70 hover:bg-white/10 hover:text-white' }}"
-                       :class="sidebarOpen ? '' : 'justify-center'">
+                       @click="sidebarOpen = false">
 
                         {{-- Ícones --}}
                         @if($item['icon'] === 'chart-bar')
@@ -94,16 +100,12 @@
                             <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" /></svg>
                         @endif
 
-                        <span x-show="sidebarOpen"
-                              x-transition:enter="transition-opacity duration-150 delay-100"
-                              x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                              x-transition:leave="transition-opacity duration-100" x-transition:leave-end="opacity-0"
-                              class="truncate">
+                        <span class="truncate">
                             {{ $item['label'] }}
                         </span>
 
                         @if($isActive)
-                            <span x-show="sidebarOpen" class="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0"></span>
+                            <span class="ml-auto h-1.5 w-1.5 rounded-full bg-white shrink-0"></span>
                         @endif
                     </a>
                 @endforeach
@@ -112,25 +114,18 @@
 
             {{-- Usuário / Logout --}}
             <div class="border-t border-white/10 px-2 py-3">
-                <div class="flex items-center gap-3 px-2 py-2 rounded-lg"
-                     :class="sidebarOpen ? '' : 'justify-center'">
+                <div class="flex items-center gap-3 rounded-lg px-2 py-2">
                     <div class="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white shrink-0">
                         {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                     </div>
-                    <div x-show="sidebarOpen"
-                         x-transition:enter="transition-opacity duration-150 delay-100"
-                         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                         x-transition:leave="transition-opacity duration-100" x-transition:leave-end="opacity-0"
-                         class="flex-1 min-w-0">
+                    <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate">{{ auth()->user()->name }}</p>
                         <p class="text-[11px] text-white/50 truncate">{{ auth()->user()->email }}</p>
                     </div>
-                    <form method="POST" action="{{ route('logout') }}" x-show="sidebarOpen">
+                    <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" title="Sair"
-                                class="text-white/50 hover:text-white transition"
-                                x-transition:enter="transition-opacity duration-150 delay-100"
-                                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                                class="text-white/50 hover:text-white transition">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.7" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                             </svg>
@@ -141,33 +136,35 @@
         </aside>
 
         {{-- Conteúdo principal --}}
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex min-h-screen flex-1 flex-col overflow-hidden lg:pl-0">
 
             {{-- Topbar --}}
-            <header class="bg-white border-b border-[#E0D8C8] px-6 py-3 flex items-center gap-4 shrink-0">
+            <header class="shrink-0 border-b border-[#E0D8C8] bg-white px-4 py-3 sm:px-6">
+                <div class="flex items-center gap-3 sm:gap-4">
                 {{-- Toggle sidebar --}}
                 <button @click="sidebarOpen = !sidebarOpen"
-                        class="text-[#4A6B3A] hover:text-[#2D5A1B] transition p-1 rounded-md hover:bg-[#F5F1E8]">
+                        class="rounded-md p-2 text-[#4A6B3A] transition hover:bg-[#F5F1E8] hover:text-[#2D5A1B] lg:hidden">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                     </svg>
                 </button>
 
                 <div class="flex-1">
-                    <h1 class="text-sm font-semibold text-[#1A3A0A]">{{ $title ?? 'Dashboard' }}</h1>
-                    <p class="text-xs text-[#8A7A60]">{{ now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
+                    <h1 class="text-sm font-semibold text-[#1A3A0A] sm:text-base">{{ $title ?? 'Dashboard' }}</h1>
+                    <p class="text-[11px] text-[#8A7A60] sm:text-xs">{{ now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
                 </div>
 
-                <div class="flex items-center gap-2 text-xs text-[#8A7A60]">
+                <div class="hidden items-center gap-2 text-xs text-[#8A7A60] sm:flex">
                     <svg class="h-4 w-4 text-[#2D5A1B]" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     {{ now()->format('H:i') }}
                 </div>
+                </div>
             </header>
 
             {{-- Página --}}
-            <main class="flex-1 overflow-y-auto p-6">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6">
                 {{ $slot }}
             </main>
         </div>

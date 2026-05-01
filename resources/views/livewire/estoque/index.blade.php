@@ -40,33 +40,28 @@
         <section class="xl:col-span-2 rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
             <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Produtos com Estoque Positivo</h3>
 
-            <div class="overflow-x-auto rounded-lg border border-[#EFE7D9]" wire:loading.class="opacity-60" wire:target="search,gotoPage,previousPage,nextPage,salvarProducao">
-                <table class="min-w-full divide-y divide-[#EFE7D9] text-sm">
-                    <thead class="bg-[#FAF7F0]">
-                        <tr class="text-left text-xs uppercase tracking-wider text-[#8A7A60]">
-                            <th class="px-3 py-3 font-semibold">Produto</th>
-                            <th class="px-3 py-3 font-semibold">SKU</th>
-                            <th class="px-3 py-3 font-semibold text-right">Estoque</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#EFE7D9] bg-white">
-                        @forelse ($estoques as $produto)
-                            <tr class="hover:bg-[#FCFAF4]">
-                                <td class="px-3 py-3 font-semibold text-[#1A3A0A]">{{ $produto->nome }}</td>
-                                <td class="px-3 py-3 text-[#4F5D45]">{{ $produto->sku ?: '-' }}</td>
-                                <td class="px-3 py-3 text-right font-semibold text-[#1A3A0A]">
-                                    {{ number_format((float) $produto->estoque_atual, 4, ',', '.') }} {{ $produto->unidade_padrao }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="px-3 py-8 text-center text-sm text-[#8A7A60]">
-                                    Nenhum produto com estoque positivo.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3 sm:p-4" wire:loading.class="opacity-60" wire:target="search,gotoPage,previousPage,nextPage,salvarProducao">
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    @forelse ($estoques as $produto)
+                        <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-[#1A3A0A]">{{ $produto->nome }}</p>
+                                    <p class="text-xs text-[#8A7A60]">{{ $produto->sku ?: 'Sem SKU' }}</p>
+                                </div>
+                                <span class="inline-flex rounded-full bg-[#EAF4E2] px-2 py-0.5 text-xs font-medium text-[#2D5A1B]">Em estoque</span>
+                            </div>
+                            <div class="mt-4 rounded-lg bg-[#FAF7F0] px-3 py-2">
+                                <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Saldo atual</p>
+                                <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ number_format((float) $produto->estoque_atual, 4, ',', '.') }} {{ $produto->unidade_padrao }}</p>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">
+                            Nenhum produto com estoque positivo.
+                        </div>
+                    @endforelse
+                </div>
             </div>
 
             <div class="mt-4">{{ $estoques->links() }}</div>

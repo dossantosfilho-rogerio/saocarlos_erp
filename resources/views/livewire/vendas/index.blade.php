@@ -39,56 +39,59 @@
     <section class="rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Historico de Vendas</h3>
 
-        <div class="overflow-x-auto rounded-lg border border-[#EFE7D9]" wire:loading.class="opacity-60" wire:target="search,gotoPage,previousPage,nextPage,salvarVenda">
-            <table class="min-w-full divide-y divide-[#EFE7D9] text-sm">
-                <thead class="bg-[#FAF7F0]">
-                    <tr class="text-left text-xs uppercase tracking-wider text-[#8A7A60]">
-                        <th class="px-3 py-3 font-semibold">Venda</th>
-                        <th class="px-3 py-3 font-semibold">Cliente</th>
-                        <th class="px-3 py-3 font-semibold">Proximo Vencimento</th>
-                        <th class="px-3 py-3 font-semibold">Contas</th>
-                        <th class="px-3 py-3 font-semibold text-right">Valor</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-[#EFE7D9] bg-white">
-                    @forelse($vendas as $venda)
-                        @php
-                            $parcelas = $venda->contasReceber;
-                            $totalParcelas = $parcelas->count();
-                            $recebidas = $parcelas->where('status', 'recebido')->count();
-                            $statusResumo = $totalParcelas === 0
-                                ? 'SEM CONTA'
-                                : ($recebidas === $totalParcelas
-                                    ? 'RECEBIDO'
-                                    : ($recebidas > 0 ? 'PARCIAL' : 'PENDENTE'));
-                            $proximoVencimento = $parcelas
-                                ->where('status', '!=', 'recebido')
-                                ->sortBy('data_vencimento')
-                                ->first()?->data_vencimento;
-                        @endphp
-                        <tr class="hover:bg-[#FCFAF4]">
-                            <td class="px-3 py-3 align-top">
+        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3 sm:p-4" wire:loading.class="opacity-60" wire:target="search,gotoPage,previousPage,nextPage,salvarVenda">
+            <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                @forelse($vendas as $venda)
+                    @php
+                        $parcelas = $venda->contasReceber;
+                        $totalParcelas = $parcelas->count();
+                        $recebidas = $parcelas->where('status', 'recebido')->count();
+                        $statusResumo = $totalParcelas === 0
+                            ? 'SEM CONTA'
+                            : ($recebidas === $totalParcelas
+                                ? 'RECEBIDO'
+                                : ($recebidas > 0 ? 'PARCIAL' : 'PENDENTE'));
+                        $proximoVencimento = $parcelas
+                            ->where('status', '!=', 'recebido')
+                            ->sortBy('data_vencimento')
+                            ->first()?->data_vencimento;
+                    @endphp
+                    <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
                                 <p class="font-semibold text-[#1A3A0A]">#{{ $venda->id }}</p>
                                 <p class="text-xs text-[#8A7A60]">{{ \Carbon\Carbon::parse($venda->data_venda)->format('d/m/Y H:i') }}</p>
-                            </td>
-                            <td class="px-3 py-3 align-top text-[#4F5D45]">{{ $venda->cliente->nome }}</td>
-                            <td class="px-3 py-3 align-top text-[#4F5D45]">{{ $proximoVencimento?->format('d/m/Y') ?: '-' }}</td>
-                            <td class="px-3 py-3 align-top">
-                                <span class="inline-flex rounded-full bg-[#FFF7ED] px-2 py-0.5 text-xs font-medium text-[#A65A2A]">
-                                    {{ $statusResumo }}{{ $totalParcelas > 1 ? ' (' . $totalParcelas . 'x)' : '' }}
-                                </span>
-                            </td>
-                            <td class="px-3 py-3 align-top text-right font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $venda->valor_total, 2, ',', '.') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-3 py-8 text-center text-sm text-[#8A7A60]">
-                                Nenhuma venda registrada.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                            </div>
+                            <span class="inline-flex rounded-full bg-[#FFF7ED] px-2 py-0.5 text-xs font-medium text-[#A65A2A]">
+                                {{ $statusResumo }}{{ $totalParcelas > 1 ? ' (' . $totalParcelas . 'x)' : '' }}
+                            </span>
+                        </div>
+
+                        <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Cliente</dt>
+                                <dd class="mt-1 text-sm text-[#4F5D45]">{{ $venda->cliente->nome }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Próximo vencimento</dt>
+                                <dd class="mt-1 text-sm text-[#4F5D45]">{{ $proximoVencimento?->format('d/m/Y') ?: '-' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Parcelas</dt>
+                                <dd class="mt-1 text-sm text-[#4F5D45]">{{ $totalParcelas ?: 0 }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valor</dt>
+                                <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $venda->valor_total, 2, ',', '.') }}</dd>
+                            </div>
+                        </dl>
+                    </article>
+                @empty
+                    <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">
+                        Nenhuma venda registrada.
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         <div class="mt-4">{{ $vendas->links() }}</div>

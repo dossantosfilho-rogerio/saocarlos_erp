@@ -1,22 +1,22 @@
-<div class="space-y-5">
+<div class="space-y-4 sm:space-y-5">
 
     {{-- Cabeçalho --}}
     <div>
-        <h2 class="text-xl font-bold text-[#1A3A0A]">Contas</h2>
+        <h2 class="text-lg font-bold text-[#1A3A0A] sm:text-xl">Contas</h2>
         <p class="text-sm text-[#8A7A60] mt-0.5">Gerencie contas a pagar e a receber.</p>
     </div>
 
     {{-- Abas --}}
-    <div class="flex border-b border-[#DCCFB7]">
+    <div class="flex overflow-x-auto border-b border-[#DCCFB7]">
         <button wire:click="$set('aba','a_receber')"
-            class="px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px
+            class="shrink-0 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px sm:px-5
                 {{ $aba === 'a_receber'
                     ? 'border-[#2D5A1B] text-[#2D5A1B]'
                     : 'border-transparent text-[#8A7A60] hover:text-[#1A3A0A]' }}">
             A Receber
         </button>
         <button wire:click="$set('aba','a_pagar')"
-            class="px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px
+            class="shrink-0 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px sm:px-5
                 {{ $aba === 'a_pagar'
                     ? 'border-[#8C4B27] text-[#8C4B27]'
                     : 'border-transparent text-[#8A7A60] hover:text-[#1A3A0A]' }}">
@@ -46,7 +46,7 @@
     </div>
 
     {{-- Totalizadores --}}
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="bg-white rounded-xl border border-[#E0D8C8] p-4">
             <p class="text-xs text-[#8A7A60] uppercase tracking-wider font-medium">Total em aberto (filtro)</p>
             <p class="text-xl font-bold mt-1 {{ $aba === 'a_receber' ? 'text-[#2563EB]' : 'text-[#DC2626]' }}">
@@ -63,95 +63,65 @@
 
     {{-- Tabela --}}
     <div class="bg-white rounded-xl border border-[#E0D8C8] shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-[#F6F2EA] border-b border-[#E0D8C8]">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">Descrição</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">
-                            {{ $aba === 'a_receber' ? 'Cliente' : 'Fornecedor' }}
-                        </th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">Vencimento</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">Valor Original</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">Em Aberto</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">Status</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-[#5A4A38] uppercase tracking-wider">Ação</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-[#F0EBE0]">
-                    @forelse($contas as $conta)
-                        @php
-                            $vencida = $conta->status !== 'pago'
-                                && $conta->data_vencimento->isPast();
-                        @endphp
-                        <tr class="hover:bg-[#FAFAF7] transition-colors {{ $vencida ? 'bg-red-50/40' : '' }}">
-                            <td class="px-4 py-3 text-[#1A3A0A] font-medium max-w-xs truncate">
-                                {{ $conta->descricao }}
-                            </td>
-                            <td class="px-4 py-3 text-[#4A3A28]">
-                                @if($aba === 'a_receber')
-                                    {{ $conta->cliente->nome ?? '—' }}
-                                @else
-                                    {{ $conta->fornecedor->nome ?? '—' }}
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                <span class="{{ $vencida ? 'text-red-600 font-semibold' : 'text-[#4A3A28]' }}">
-                                    {{ $conta->data_vencimento->format('d/m/Y') }}
-                                </span>
-                                @if($vencida)
-                                    <span class="ml-1 text-xs text-red-500">(vencida)</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-right text-[#4A3A28]">
-                                R$ {{ number_format($conta->valor_original, 2, ',', '.') }}
-                            </td>
-                            <td class="px-4 py-3 text-right font-semibold {{ $conta->status !== 'pago' ? ($aba === 'a_receber' ? 'text-[#2563EB]' : 'text-[#DC2626]') : 'text-[#8A7A60]' }}">
-                                R$ {{ number_format($conta->valor_aberto, 2, ',', '.') }}
-                            </td>
-                            <td class="px-4 py-3 text-center">
+        <div class="bg-[#FCFAF4] p-3 sm:p-4">
+            <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                @forelse($contas as $conta)
+                    @php
+                        $vencida = $conta->status !== 'pago' && $conta->data_vencimento->isPast();
+                    @endphp
+                    <article class="rounded-xl border {{ $vencida ? 'border-red-200 bg-red-50/40' : 'border-[#E8DECE] bg-white' }} p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-medium text-[#1A3A0A] truncate">{{ $conta->descricao }}</p>
+                                <p class="mt-1 text-xs text-[#8A7A60]">{{ $aba === 'a_receber' ? ($conta->cliente->nome ?? '—') : ($conta->fornecedor->nome ?? '—') }}</p>
+                            </div>
+                            <div>
                                 @if($conta->status === 'pago')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                        <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0Z" clip-rule="evenodd"/></svg>
-                                        Pago
-                                    </span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Pago</span>
                                 @elseif($conta->status === 'parcial')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                                        Parcial
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Parcial</span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $vencida ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600' }}">
-                                        Pendente
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $vencida ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600' }}">Pendente</span>
                                 @endif
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                @if($conta->status !== 'pago')
-                                    <button
-                                        wire:click="abrirBaixa({{ $conta->id }}, '{{ $aba === 'a_receber' ? 'receber' : 'pagar' }}')"
-                                        class="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition
-                                            {{ $aba === 'a_receber'
-                                                ? 'bg-[#EAF4E2] text-[#2D5A1B] hover:bg-[#2D5A1B] hover:text-white'
-                                                : 'bg-[#FDF0EA] text-[#8C4B27] hover:bg-[#8C4B27] hover:text-white' }}">
-                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
-                                        </svg>
-                                        Baixar
-                                    </button>
-                                @else
-                                    <span class="text-xs text-[#B0A090]">—</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-4 py-10 text-center text-[#A89A80] text-sm">
-                                Nenhuma conta encontrada.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                            </div>
+                        </div>
+
+                        <dl class="mt-4 grid grid-cols-2 gap-3">
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Vencimento</dt>
+                                <dd class="mt-1 text-sm {{ $vencida ? 'text-red-600 font-semibold' : 'text-[#4A3A28]' }}">{{ $conta->data_vencimento->format('d/m/Y') }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valor original</dt>
+                                <dd class="mt-1 text-sm text-[#4A3A28]">R$ {{ number_format($conta->valor_original, 2, ',', '.') }}</dd>
+                            </div>
+                            <div class="col-span-2">
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Em aberto</dt>
+                                <dd class="mt-1 text-sm font-semibold {{ $conta->status !== 'pago' ? ($aba === 'a_receber' ? 'text-[#2563EB]' : 'text-[#DC2626]') : 'text-[#8A7A60]' }}">R$ {{ number_format($conta->valor_aberto, 2, ',', '.') }}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-4 flex justify-end">
+                            @if($conta->status !== 'pago')
+                                <button
+                                    wire:click="abrirBaixa({{ $conta->id }}, '{{ $aba === 'a_receber' ? 'receber' : 'pagar' }}')"
+                                    class="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition {{ $aba === 'a_receber' ? 'bg-[#EAF4E2] text-[#2D5A1B] hover:bg-[#2D5A1B] hover:text-white' : 'bg-[#FDF0EA] text-[#8C4B27] hover:bg-[#8C4B27] hover:text-white' }}">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                                    </svg>
+                                    Baixar
+                                </button>
+                            @else
+                                <span class="text-xs text-[#B0A090]">Quitada</span>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <div class="col-span-full px-4 py-10 text-center text-[#A89A80] text-sm rounded-xl border border-dashed border-[#DCCFB7] bg-white">
+                        Nenhuma conta encontrada.
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         @if($contas->hasPages())
@@ -169,8 +139,8 @@
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" wire:click="fecharBaixaModal"></div>
 
         {{-- Card --}}
-        <div id="baixa-modal" tabindex="-1"
-             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md ring-1
+           <div id="baixa-modal" tabindex="-1"
+               class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md ring-1
                 {{ $baixaTipo === 'receber' ? 'ring-[#2D5A1B]/20' : 'ring-[#8C4B27]/20' }}">
 
             {{-- Header --}}
@@ -244,7 +214,7 @@
             </div>
 
             {{-- Footer --}}
-            <div class="px-6 py-4 border-t border-[#F0EBE0] flex gap-3 justify-end">
+            <div class="px-6 py-4 border-t border-[#F0EBE0] flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button wire:click="fecharBaixaModal"
                     class="px-4 py-2 text-sm font-medium text-[#5A4A38] bg-[#F0EBE0] rounded-lg hover:bg-[#E5DDD0] transition">
                     Cancelar

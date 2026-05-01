@@ -39,45 +39,31 @@
                 >
             </div>
 
-            <div class="overflow-x-auto rounded-lg border border-[#EFE7D9]" wire:loading.class="opacity-60" wire:target="searchProduto,editProduto,deleteProduto,gotoPage,previousPage,nextPage,saveProduto">
-                <table class="min-w-full divide-y divide-[#EFE7D9] text-sm">
-                    <thead class="bg-[#FAF7F0]">
-                        <tr class="text-left text-xs uppercase tracking-wider text-[#8A7A60]">
-                            <th class="px-3 py-3 font-semibold">Produto</th>
-                            <th class="px-3 py-3 font-semibold">Un.</th>
-                            <th class="px-3 py-3 font-semibold">Status</th>
-                            <th class="px-3 py-3 font-semibold text-right">Acoes</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#EFE7D9] bg-white">
-                        @forelse ($produtos as $produto)
-                            <tr class="hover:bg-[#FCFAF4]">
-                                <td class="px-3 py-3 align-top">
+            <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3 sm:p-4" wire:loading.class="opacity-60" wire:target="searchProduto,editProduto,deleteProduto,gotoPage,previousPage,nextPage,saveProduto">
+                <div class="grid grid-cols-1 gap-3">
+                    @forelse ($produtos as $produto)
+                        <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
                                     <p class="font-semibold text-[#1A3A0A]">{{ $produto->nome }}</p>
                                     <p class="text-xs text-[#8A7A60]">{{ $produto->sku ?: 'Sem SKU' }}</p>
-                                </td>
-                                <td class="px-3 py-3 align-top text-[#4F5D45]">{{ $produto->unidade_padrao }}</td>
-                                <td class="px-3 py-3 align-top">
-                                    @if($produto->ativo)
-                                        <span class="inline-flex rounded-full bg-[#EAF4E2] px-2 py-0.5 text-xs font-medium text-[#2D5A1B]">Ativo</span>
-                                    @else
-                                        <span class="inline-flex rounded-full bg-[#FDECEA] px-2 py-0.5 text-xs font-medium text-[#8A3A2A]">Inativo</span>
-                                    @endif
-                                </td>
-                                <td class="px-3 py-3 align-top">
-                                    <div class="flex justify-end gap-2">
-                                        <button type="button" wire:click="editProduto({{ $produto->id }})" class="rounded-md border border-[#DCCFB7] px-2.5 py-1.5 text-xs font-medium text-[#4F5D45] hover:bg-[#F7F3EA]">Editar</button>
-                                        <button type="button" wire:click="deleteProduto({{ $produto->id }})" onclick="confirm('Deseja excluir este produto?') || event.stopImmediatePropagation()" class="rounded-md border border-[#F2C8C3] px-2.5 py-1.5 text-xs font-medium text-[#9A4030] hover:bg-[#FDECEA]">Excluir</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-3 py-8 text-center text-sm text-[#8A7A60]">Nenhum produto cadastrado.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                </div>
+                                @if($produto->ativo)
+                                    <span class="inline-flex rounded-full bg-[#EAF4E2] px-2 py-0.5 text-xs font-medium text-[#2D5A1B]">Ativo</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-[#FDECEA] px-2 py-0.5 text-xs font-medium text-[#8A3A2A]">Inativo</span>
+                                @endif
+                            </div>
+                            <p class="mt-3 text-sm text-[#4F5D45]">Unidade: {{ $produto->unidade_padrao }}</p>
+                            <div class="mt-4 flex justify-end gap-2">
+                                <button type="button" wire:click="editProduto({{ $produto->id }})" class="rounded-md border border-[#DCCFB7] px-2.5 py-1.5 text-xs font-medium text-[#4F5D45] hover:bg-[#F7F3EA]">Editar</button>
+                                <button type="button" wire:click="deleteProduto({{ $produto->id }})" onclick="confirm('Deseja excluir este produto?') || event.stopImmediatePropagation()" class="rounded-md border border-[#F2C8C3] px-2.5 py-1.5 text-xs font-medium text-[#9A4030] hover:bg-[#FDECEA]">Excluir</button>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">Nenhum produto cadastrado.</div>
+                    @endforelse
+                </div>
             </div>
 
             <div class="mt-4">{{ $produtos->links() }}</div>
@@ -109,45 +95,33 @@
                 >
             </div>
 
-            <div class="overflow-x-auto rounded-lg border border-[#EFE7D9]" wire:loading.class="opacity-60" wire:target="searchInsumo,editInsumo,deleteInsumo,gotoPage,previousPage,nextPage,saveInsumo">
-                <table class="min-w-full divide-y divide-[#EFE7D9] text-sm">
-                    <thead class="bg-[#FAF7F0]">
-                        <tr class="text-left text-xs uppercase tracking-wider text-[#8A7A60]">
-                            <th class="px-3 py-3 font-semibold">Insumo</th>
-                            <th class="px-3 py-3 font-semibold">Un.</th>
-                            <th class="px-3 py-3 font-semibold">Custo</th>
-                            <th class="px-3 py-3 font-semibold text-right">Acoes</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#EFE7D9] bg-white">
-                        @forelse ($insumos as $insumo)
-                            <tr class="hover:bg-[#FCFAF4]">
-                                <td class="px-3 py-3 align-top">
+            <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3 sm:p-4" wire:loading.class="opacity-60" wire:target="searchInsumo,editInsumo,deleteInsumo,gotoPage,previousPage,nextPage,saveInsumo">
+                <div class="grid grid-cols-1 gap-3">
+                    @forelse ($insumos as $insumo)
+                        <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
                                     <p class="font-semibold text-[#1A3A0A]">{{ $insumo->nome }}</p>
                                     <p class="text-xs text-[#8A7A60]">{{ $insumo->codigo ?: 'Sem codigo' }}</p>
-                                </td>
-                                <td class="px-3 py-3 align-top text-[#4F5D45]">{{ $insumo->unidade }}</td>
-                                <td class="px-3 py-3 align-top text-[#4F5D45]">
-                                    @if((float) $insumo->custo_unitario > 0)
-                                        R$ {{ number_format($insumo->custo_unitario, 4, ',', '.') }}
-                                    @else
-                                        <span class="text-[#8A7A60]">A calcular</span>
-                                    @endif
-                                </td>
-                                <td class="px-3 py-3 align-top">
-                                    <div class="flex justify-end gap-2">
-                                        <button type="button" wire:click="editInsumo({{ $insumo->id }})" class="rounded-md border border-[#DCCFB7] px-2.5 py-1.5 text-xs font-medium text-[#4F5D45] hover:bg-[#F7F3EA]">Editar</button>
-                                        <button type="button" wire:click="deleteInsumo({{ $insumo->id }})" onclick="confirm('Deseja excluir este insumo?') || event.stopImmediatePropagation()" class="rounded-md border border-[#F2C8C3] px-2.5 py-1.5 text-xs font-medium text-[#9A4030] hover:bg-[#FDECEA]">Excluir</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-3 py-8 text-center text-sm text-[#8A7A60]">Nenhum insumo cadastrado.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                </div>
+                                <span class="text-xs font-medium text-[#4F5D45]">{{ $insumo->unidade }}</span>
+                            </div>
+                            <p class="mt-3 text-sm text-[#4F5D45]">
+                                @if((float) $insumo->custo_unitario > 0)
+                                    R$ {{ number_format($insumo->custo_unitario, 4, ',', '.') }}
+                                @else
+                                    <span class="text-[#8A7A60]">A calcular</span>
+                                @endif
+                            </p>
+                            <div class="mt-4 flex justify-end gap-2">
+                                <button type="button" wire:click="editInsumo({{ $insumo->id }})" class="rounded-md border border-[#DCCFB7] px-2.5 py-1.5 text-xs font-medium text-[#4F5D45] hover:bg-[#F7F3EA]">Editar</button>
+                                <button type="button" wire:click="deleteInsumo({{ $insumo->id }})" onclick="confirm('Deseja excluir este insumo?') || event.stopImmediatePropagation()" class="rounded-md border border-[#F2C8C3] px-2.5 py-1.5 text-xs font-medium text-[#9A4030] hover:bg-[#FDECEA]">Excluir</button>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">Nenhum insumo cadastrado.</div>
+                    @endforelse
+                </div>
             </div>
 
             <div class="mt-4">{{ $insumos->links() }}</div>

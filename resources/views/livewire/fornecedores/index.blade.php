@@ -54,73 +54,64 @@
         <section class="rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
             <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Lista de Fornecedores</h3>
 
-            <div class="overflow-x-auto rounded-lg border border-[#EFE7D9]" wire:loading.class="opacity-60" wire:target="search,edit,delete,gotoPage,previousPage,nextPage,save">
-                <table class="min-w-full divide-y divide-[#EFE7D9] text-sm">
-                    <thead class="bg-[#FAF7F0]">
-                        <tr class="text-left text-xs uppercase tracking-wider text-[#8A7A60]">
-                            <th class="px-3 py-3 font-semibold">Nome</th>
-                            <th class="px-3 py-3 font-semibold">Contato</th>
-                            <th class="px-3 py-3 font-semibold">Cidade/UF</th>
-                            <th class="px-3 py-3 font-semibold">Status</th>
-                            <th class="px-3 py-3 font-semibold text-right">Acoes</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#EFE7D9] bg-white">
-                        @forelse ($fornecedores as $fornecedor)
-                            <tr class="hover:bg-[#FCFAF4]">
-                                <td class="px-3 py-3 align-top">
+            <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3 sm:p-4" wire:loading.class="opacity-60" wire:target="search,edit,delete,gotoPage,previousPage,nextPage,save">
+                <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                    @forelse ($fornecedores as $fornecedor)
+                        <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
                                     <p class="font-semibold text-[#1A3A0A]">{{ $fornecedor->nome }}</p>
                                     <p class="text-xs text-[#8A7A60]">{{ $fornecedor->tipo }}{{ $fornecedor->documento ? ' - ' . $fornecedor->documento : '' }}</p>
-                                </td>
-                                <td class="px-3 py-3 align-top text-[#4F5D45]">
-                                    <p>{{ $fornecedor->telefone ?: '-' }}</p>
-                                    <p class="text-xs text-[#8A7A60]">{{ $fornecedor->email ?: '-' }}</p>
-                                </td>
-                                <td class="px-3 py-3 align-top text-[#4F5D45]">
-                                    {{ ($fornecedor->cidade ?: '-') . ($fornecedor->uf ? '/' . $fornecedor->uf : '') }}
-                                </td>
-                                <td class="px-3 py-3 align-top">
-                                    @if($fornecedor->ativo)
-                                        <span class="inline-flex rounded-full bg-[#EAF4E2] px-2 py-0.5 text-xs font-medium text-[#2D5A1B]">Ativo</span>
-                                    @else
-                                        <span class="inline-flex rounded-full bg-[#FDECEA] px-2 py-0.5 text-xs font-medium text-[#8A3A2A]">Inativo</span>
-                                    @endif
-                                </td>
-                                <td class="px-3 py-3 align-top">
-                                    <div class="flex justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            wire:click="edit({{ $fornecedor->id }})"
-                                            wire:loading.attr="disabled"
-                                            wire:target="edit({{ $fornecedor->id }})"
-                                            class="rounded-md border border-[#DCCFB7] px-2.5 py-1.5 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            <span wire:loading.remove wire:target="edit({{ $fornecedor->id }})">Editar</span>
-                                            <span wire:loading.inline wire:target="edit({{ $fornecedor->id }})">...</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            wire:click="delete({{ $fornecedor->id }})"
-                                            wire:loading.attr="disabled"
-                                            wire:target="delete({{ $fornecedor->id }})"
-                                            onclick="confirm('Deseja excluir este fornecedor?') || event.stopImmediatePropagation()"
-                                            class="rounded-md border border-[#F2C8C3] px-2.5 py-1.5 text-xs font-medium text-[#9A4030] transition hover:bg-[#FDECEA] disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            <span wire:loading.remove wire:target="delete({{ $fornecedor->id }})">Excluir</span>
-                                            <span wire:loading.inline wire:target="delete({{ $fornecedor->id }})">...</span>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-3 py-8 text-center text-sm text-[#8A7A60]">
-                                    Nenhum fornecedor cadastrado.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                </div>
+                                @if($fornecedor->ativo)
+                                    <span class="inline-flex rounded-full bg-[#EAF4E2] px-2 py-0.5 text-xs font-medium text-[#2D5A1B]">Ativo</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-[#FDECEA] px-2 py-0.5 text-xs font-medium text-[#8A3A2A]">Inativo</span>
+                                @endif
+                            </div>
+
+                            <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Contato</dt>
+                                    <dd class="mt-1 text-sm text-[#4F5D45]">{{ $fornecedor->telefone ?: '-' }}</dd>
+                                    <dd class="text-xs text-[#8A7A60]">{{ $fornecedor->email ?: '-' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Cidade/UF</dt>
+                                    <dd class="mt-1 text-sm text-[#4F5D45]">{{ ($fornecedor->cidade ?: '-') . ($fornecedor->uf ? '/' . $fornecedor->uf : '') }}</dd>
+                                </div>
+                            </dl>
+
+                            <div class="mt-4 flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    wire:click="edit({{ $fornecedor->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="edit({{ $fornecedor->id }})"
+                                    class="rounded-md border border-[#DCCFB7] px-2.5 py-1.5 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="edit({{ $fornecedor->id }})">Editar</span>
+                                    <span wire:loading.inline wire:target="edit({{ $fornecedor->id }})">...</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    wire:click="delete({{ $fornecedor->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="delete({{ $fornecedor->id }})"
+                                    onclick="confirm('Deseja excluir este fornecedor?') || event.stopImmediatePropagation()"
+                                    class="rounded-md border border-[#F2C8C3] px-2.5 py-1.5 text-xs font-medium text-[#9A4030] transition hover:bg-[#FDECEA] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="delete({{ $fornecedor->id }})">Excluir</span>
+                                    <span wire:loading.inline wire:target="delete({{ $fornecedor->id }})">...</span>
+                                </button>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">
+                            Nenhum fornecedor cadastrado.
+                        </div>
+                    @endforelse
+                </div>
             </div>
 
             <div class="mt-4">

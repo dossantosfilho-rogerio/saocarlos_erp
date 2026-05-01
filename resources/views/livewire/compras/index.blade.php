@@ -39,66 +39,68 @@
     <section class="rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Historico de Compras</h3>
 
-        <div class="overflow-x-auto rounded-lg border border-[#EFE7D9]" wire:loading.class="opacity-60" wire:target="search,gotoPage,previousPage,nextPage,salvarCompra">
-            <table class="min-w-full divide-y divide-[#EFE7D9] text-sm">
-                <thead class="bg-[#FAF7F0]">
-                    <tr class="text-left text-xs uppercase tracking-wider text-[#8A7A60]">
-                        <th class="px-3 py-3 font-semibold">Compra</th>
-                        <th class="px-3 py-3 font-semibold">Fornecedor</th>
-                        <th class="px-3 py-3 font-semibold">Vencimento</th>
-                        <th class="px-3 py-3 font-semibold">Conta</th>
-                        <th class="px-3 py-3 font-semibold text-right">Valor</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-[#EFE7D9] bg-white">
-                    @forelse($compras as $compra)
-                        @php
-                            $parcelas = $compra->contasPagar;
-                            $totalParcelas = $parcelas->count();
-                            $pagas = $parcelas->where('status', 'pago')->count();
-                            $statusResumo = $totalParcelas === 0
-                                ? 'SEM CONTA'
-                                : ($pagas === $totalParcelas
-                                    ? 'PAGO'
-                                    : ($pagas > 0 ? 'PARCIAL' : 'PENDENTE'));
-                            $proximoVencimento = $parcelas
-                                ->where('status', '!=', 'pago')
-                                ->sortBy('data_vencimento')
-                                ->first()?->data_vencimento;
-                        @endphp
-                        @php
-                            $categoriasMap = \App\Livewire\Compras\Index::CATEGORIAS_DESPESA;
-                        @endphp
-                        <tr class="hover:bg-[#FCFAF4]">
-                            <td class="px-3 py-3 align-top">
+        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3 sm:p-4" wire:loading.class="opacity-60" wire:target="search,gotoPage,previousPage,nextPage,salvarCompra">
+            <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                @forelse($compras as $compra)
+                    @php
+                        $parcelas = $compra->contasPagar;
+                        $totalParcelas = $parcelas->count();
+                        $pagas = $parcelas->where('status', 'pago')->count();
+                        $statusResumo = $totalParcelas === 0
+                            ? 'SEM CONTA'
+                            : ($pagas === $totalParcelas
+                                ? 'PAGO'
+                                : ($pagas > 0 ? 'PARCIAL' : 'PENDENTE'));
+                        $proximoVencimento = $parcelas
+                            ->where('status', '!=', 'pago')
+                            ->sortBy('data_vencimento')
+                            ->first()?->data_vencimento;
+                        $categoriasMap = \App\Livewire\Compras\Index::CATEGORIAS_DESPESA;
+                    @endphp
+                    <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
                                 <p class="font-semibold text-[#1A3A0A]">#{{ $compra->id }}</p>
                                 <p class="text-xs text-[#8A7A60]">{{ \Carbon\Carbon::parse($compra->data_compra)->format('d/m/Y H:i') }}</p>
-                                @if($compra->tipo === 'despesa')
-                                    <span class="mt-0.5 inline-flex items-center rounded-full bg-[#FDF0EA] px-2 py-0.5 text-xs font-medium text-[#8C4B27]">
-                                        {{ $categoriasMap[$compra->categoria_despesa] ?? 'Despesa' }}
-                                    </span>
-                                @else
-                                    <span class="mt-0.5 inline-flex items-center rounded-full bg-[#EAF4E2] px-2 py-0.5 text-xs font-medium text-[#2D5A1B]">Insumos</span>
-                                @endif
-                            </td>
-                            <td class="px-3 py-3 align-top text-[#4F5D45]">{{ $compra->fornecedor?->nome ?: 'Nao informado' }}</td>
-                            <td class="px-3 py-3 align-top text-[#4F5D45]">{{ $proximoVencimento?->format('d/m/Y') ?: '-' }}</td>
-                            <td class="px-3 py-3 align-top">
-                                <span class="inline-flex rounded-full bg-[#FFF7ED] px-2 py-0.5 text-xs font-medium text-[#A65A2A]">
-                                    {{ $statusResumo }}{{ $totalParcelas > 1 ? ' (' . $totalParcelas . 'x)' : '' }}
+                            </div>
+                            @if($compra->tipo === 'despesa')
+                                <span class="inline-flex items-center rounded-full bg-[#FDF0EA] px-2.5 py-1 text-xs font-medium text-[#8C4B27]">
+                                    {{ $categoriasMap[$compra->categoria_despesa] ?? 'Despesa' }}
                                 </span>
-                            </td>
-                            <td class="px-3 py-3 align-top text-right font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $compra->valor_total, 2, ',', '.') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-3 py-8 text-center text-sm text-[#8A7A60]">
-                                Nenhuma compra registrada.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                            @else
+                                <span class="inline-flex items-center rounded-full bg-[#EAF4E2] px-2.5 py-1 text-xs font-medium text-[#2D5A1B]">Insumos</span>
+                            @endif
+                        </div>
+
+                        <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Fornecedor</dt>
+                                <dd class="mt-1 text-sm text-[#4F5D45]">{{ $compra->fornecedor?->nome ?: 'Nao informado' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Próximo vencimento</dt>
+                                <dd class="mt-1 text-sm text-[#4F5D45]">{{ $proximoVencimento?->format('d/m/Y') ?: '-' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Conta</dt>
+                                <dd class="mt-1">
+                                    <span class="inline-flex rounded-full bg-[#FFF7ED] px-2 py-0.5 text-xs font-medium text-[#A65A2A]">
+                                        {{ $statusResumo }}{{ $totalParcelas > 1 ? ' (' . $totalParcelas . 'x)' : '' }}
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valor</dt>
+                                <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $compra->valor_total, 2, ',', '.') }}</dd>
+                            </div>
+                        </dl>
+                    </article>
+                @empty
+                    <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-10 text-center text-sm text-[#8A7A60]">
+                        Nenhuma compra registrada.
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         <div class="mt-4">{{ $compras->links() }}</div>
