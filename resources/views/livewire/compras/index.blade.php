@@ -94,6 +94,19 @@
                                 <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $compra->valor_total, 2, ',', '.') }}</dd>
                             </div>
                         </dl>
+
+                        <div class="mt-4 flex justify-end">
+                            <button
+                                type="button"
+                                wire:click="openDetailsModal({{ $compra->id }})"
+                                wire:loading.attr="disabled"
+                                wire:target="openDetailsModal({{ $compra->id }})"
+                                class="rounded-md border border-[#DCCFB7] px-3 py-1.5 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <span wire:loading.remove wire:target="openDetailsModal({{ $compra->id }})">Detalhes</span>
+                                <span wire:loading.inline wire:target="openDetailsModal({{ $compra->id }})">...</span>
+                            </button>
+                        </div>
                     </article>
                 @empty
                     <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-10 text-center text-sm text-[#8A7A60]">
@@ -306,6 +319,151 @@
                         </button>
                     </div>
                 </form>
+            </section>
+        </div>
+    @endif
+
+    @if($showDetailsModal && $compraDetalhes)
+        <div class="fixed inset-0 z-40 bg-[#1A1A1A]/50" wire:click="closeDetailsModal"></div>
+
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <section class="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-xl">
+                <div class="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Detalhes da Compra #{{ $compraDetalhes->id }}</h3>
+                        <p class="mt-1 text-xs text-[#8A7A60]">{{ $compraDetalhes->data_compra?->format('d/m/Y H:i') }}</p>
+                    </div>
+                    <button type="button" wire:click="closeDetailsModal" class="rounded-md px-2 py-1 text-[#8A7A60] hover:bg-[#F7F3EA]">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4" wire:click.stop>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Tipo</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">
+                                @if($compraDetalhes->tipo === 'despesa')
+                                    {{ $categoriasDespesa[$compraDetalhes->categoria_despesa] ?? 'Despesa' }}
+                                @else
+                                    Compra de Insumos
+                                @endif
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Fornecedor</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ $compraDetalhes->fornecedor?->nome ?: 'Nao informado' }}</p>
+                        </div>
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valor Total</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $compraDetalhes->valor_total, 2, ',', '.') }}</p>
+                        </div>
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Parcelas</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ $compraDetalhes->contasPagar->count() }}</p>
+                        </div>
+                    </div>
+
+                    @if($compraDetalhes->observacoes)
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FFFEFA] p-4">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Observacoes</p>
+                            <p class="mt-2 text-sm text-[#4F5D45]">{{ $compraDetalhes->observacoes }}</p>
+                        </div>
+                    @endif
+
+                    @if($compraDetalhes->tipo === 'compra')
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FAF7F0] p-4">
+                            <div class="mb-3 flex items-center justify-between">
+                                <p class="text-sm font-semibold text-[#1A3A0A]">Itens da Compra</p>
+                                <span class="text-xs text-[#8A7A60]">{{ $compraDetalhes->itens->count() }} item(ns)</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                @forelse($compraDetalhes->itens as $item)
+                                    <div class="grid grid-cols-1 gap-2 rounded-lg border border-[#E8DECE] bg-white p-3 sm:grid-cols-4">
+                                        <div>
+                                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Insumo</p>
+                                            <p class="mt-1 text-sm font-medium text-[#1A3A0A]">{{ $item->insumo?->nome ?: 'Item removido' }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Quantidade</p>
+                                            <p class="mt-1 text-sm text-[#4F5D45]">{{ number_format((float) $item->quantidade, 4, ',', '.') }} {{ $item->unidade }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valor Unitario</p>
+                                            <p class="mt-1 text-sm text-[#4F5D45]">R$ {{ number_format((float) $item->valor_unitario, 4, ',', '.') }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valor Total</p>
+                                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $item->valor_total, 2, ',', '.') }}</p>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="rounded-lg border border-dashed border-[#DCCFB7] bg-white px-4 py-6 text-center text-sm text-[#8A7A60]">
+                                        Nenhum item vinculado a esta compra.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @else
+                        <div class="rounded-lg border border-[#F5E0D5] bg-[#FDF7F4] p-4">
+                            <p class="text-sm font-semibold text-[#8C4B27]">Dados da Despesa</p>
+                            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div>
+                                    <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Categoria</p>
+                                    <p class="mt-1 text-sm text-[#4F5D45]">{{ $categoriasDespesa[$compraDetalhes->categoria_despesa] ?? 'Nao informada' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Descricao</p>
+                                    <p class="mt-1 text-sm text-[#4F5D45]">
+                                        {{ $compraDetalhes->contasPagar->first()?->descricao ?: 'Nao informada' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-4">
+                        <div class="mb-3 flex items-center justify-between">
+                            <p class="text-sm font-semibold text-[#1A3A0A]">Contas a Pagar</p>
+                            <span class="text-xs text-[#8A7A60]">{{ $compraDetalhes->contasPagar->count() }} registro(s)</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            @forelse($compraDetalhes->contasPagar->sortBy('data_vencimento') as $conta)
+                                <div class="grid grid-cols-1 gap-2 rounded-lg border border-[#E8DECE] bg-white p-3 sm:grid-cols-4">
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Descricao</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">{{ $conta->descricao }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Vencimento</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">{{ $conta->data_vencimento?->format('d/m/Y') ?: '-' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Status</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">{{ strtoupper($conta->status) }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Valores</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">Original: R$ {{ number_format((float) $conta->valor_original, 2, ',', '.') }}</p>
+                                        <p class="text-xs text-[#8A7A60]">Aberto: R$ {{ number_format((float) $conta->valor_aberto, 2, ',', '.') }}</p>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="rounded-lg border border-dashed border-[#DCCFB7] bg-white px-4 py-6 text-center text-sm text-[#8A7A60]">
+                                    Nenhuma conta a pagar gerada para esta compra.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="button" wire:click="closeDetailsModal" class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm">Fechar</button>
+                    </div>
+                </div>
             </section>
         </div>
     @endif

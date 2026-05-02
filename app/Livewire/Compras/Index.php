@@ -19,6 +19,8 @@ class Index extends Component
     use WithPagination;
 
     public bool $showFormModal = false;
+    public bool $showDetailsModal = false;
+    public ?int $detailsCompraId = null;
     public string $search = '';
 
     public const CATEGORIAS_DESPESA = [
@@ -69,6 +71,18 @@ class Index extends Component
     {
         $this->showFormModal = false;
         $this->resetForm();
+    }
+
+    public function openDetailsModal(int $compraId): void
+    {
+        $this->detailsCompraId = $compraId;
+        $this->showDetailsModal = true;
+    }
+
+    public function closeDetailsModal(): void
+    {
+        $this->showDetailsModal = false;
+        $this->detailsCompraId = null;
     }
 
     public function addItemLinha(): void
@@ -422,8 +436,21 @@ class Index extends Component
             ->orderBy('nome')
             ->get(['id', 'nome', 'codigo', 'unidade', 'custo_unitario']);
 
+        $compraDetalhes = null;
+
+        if ($this->showDetailsModal && $this->detailsCompraId !== null) {
+            $compraDetalhes = Compra::query()
+                ->with(['fornecedor', 'itens.insumo', 'contasPagar'])
+                ->find($this->detailsCompraId);
+
+            if ($compraDetalhes === null) {
+                $this->closeDetailsModal();
+            }
+        }
+
         return view('livewire.compras.index', [
             'compras' => $compras,
+            'compraDetalhes' => $compraDetalhes,
             'fornecedoresAtivos' => $fornecedoresAtivos,
             'insumosAtivos' => $insumosAtivos,
             'categoriasDespesa' => self::CATEGORIAS_DESPESA,
