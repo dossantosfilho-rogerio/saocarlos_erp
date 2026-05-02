@@ -22,6 +22,7 @@ class Index extends Component
         'tipo' => 'PJ',
         'nome' => '',
         'documento' => '',
+        'inscricao_estadual' => '',
         'email' => '',
         'telefone' => '',
         'cidade' => '',
@@ -47,6 +48,7 @@ class Index extends Component
                 'max:20',
                 Rule::unique('clientes', 'documento')->ignore($this->editingId),
             ],
+            'form.inscricao_estadual' => ['nullable', 'string', 'max:30'],
             'form.email' => [
                 'nullable',
                 'email',
@@ -66,6 +68,9 @@ class Index extends Component
     {
         $validated = $this->validate()['form'];
         $validated['uf'] = strtoupper((string) $validated['uf']);
+        $validated['inscricao_estadual'] = $validated['tipo'] === 'PJ'
+            ? ($validated['inscricao_estadual'] !== '' ? $validated['inscricao_estadual'] : null)
+            : null;
 
         if ($this->editingId) {
             Cliente::query()->findOrFail($this->editingId)->update($validated);
@@ -94,6 +99,7 @@ class Index extends Component
             'tipo' => $cliente->tipo,
             'nome' => $cliente->nome,
             'documento' => $cliente->documento ?? '',
+            'inscricao_estadual' => $cliente->inscricao_estadual ?? '',
             'email' => $cliente->email ?? '',
             'telefone' => $cliente->telefone ?? '',
             'cidade' => $cliente->cidade ?? '',

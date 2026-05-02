@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'tipo',
     'nome',
     'documento',
+    'inscricao_estadual',
     'email',
     'telefone',
     'cidade',

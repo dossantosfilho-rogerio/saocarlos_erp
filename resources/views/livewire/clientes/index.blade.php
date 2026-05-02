@@ -195,6 +195,19 @@
                             @error('form.documento') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
+                        @if($form['tipo'] === 'PJ')
+                            <div>
+                                <label for="inscricao_estadual" class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Inscricao Estadual</label>
+                                <input
+                                    id="inscricao_estadual"
+                                    type="text"
+                                    wire:model="form.inscricao_estadual"
+                                    class="w-full rounded-lg border border-[#DCCFB7] bg-white px-3 py-2 text-sm text-[#1A3A0A] focus:border-[#2D5A1B] focus:outline-none focus:ring-2 focus:ring-[#2D5A1B]/20"
+                                >
+                                @error('form.inscricao_estadual') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                            </div>
+                        @endif
+
                         <div>
                             <label for="telefone" class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Telefone</label>
                             <input
