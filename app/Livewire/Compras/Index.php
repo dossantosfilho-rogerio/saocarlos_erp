@@ -6,9 +6,11 @@ use App\Models\Compra;
 use App\Models\ContaPagar;
 use App\Models\Fornecedor;
 use App\Models\Insumo;
+use App\Models\InsumoLote;
 use App\Services\InsumoFifoService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,7 +23,20 @@ class Index extends Component
     public bool $showFormModal = false;
     public bool $showDetailsModal = false;
     public ?int $detailsCompraId = null;
+    public bool $showEditModal = false;
+    public ?int $editingCompraId = null;
+    public bool $editCanEditFinancial = false;
     public string $search = '';
+
+    public array $editForm = [
+        'tipo'               => '',
+        'data_compra'        => '',
+        'fornecedor_id'      => '',
+        'observacoes'        => '',
+        'categoria_despesa'  => '',
+        'descricao_despesa'  => '',
+        'valor_despesa'      => '',
+    ];
 
     public const CATEGORIAS_DESPESA = [
         'manutencao_carro'     => 'Manutenção de Carro',
@@ -83,6 +98,186 @@ class Index extends Component
     {
         $this->showDetailsModal = false;
         $this->detailsCompraId = null;
+    }
+
+    public function openEditModal(int $id): void
+    {
+        $compra = Compra::query()->with('contasPagar')->findOrFail($id);
+
+        $allPendente = $compra->contasPagar->count() === 0
+            || $compra->contasPagar->every(fn ($c) => $c->status === 'pendente');
+
+        $this->editCanEditFinancial = $compra->tipo === 'despesa' && $allPendente;
+
+        $descricaoDespesa = '';
+        if ($compra->tipo === 'despesa' && $compra->contasPagar->isNotEmpty()) {
+            $desc = $compra->contasPagar->first()->descricao;
+            $desc = preg_replace('/ - Parcela \d+\/\d+$/', '', $desc);
+            $categoryName = self::CATEGORIAS_DESPESA[$compra->categoria_despesa] ?? '';
+            if ($categoryName !== '' && str_starts_with($desc, $categoryName . ': ')) {
+                $desc = substr($desc, strlen($categoryName) + 2);
+            }
+            $descricaoDespesa = $desc;
+        }
+
+        $this->editForm = [
+            'tipo'              => $compra->tipo,
+            'data_compra'       => $compra->data_compra?->format('Y-m-d\TH:i') ?? '',
+            'fornecedor_id'     => $compra->fornecedor_id ?? '',
+            'observacoes'       => $compra->observacoes ?? '',
+            'categoria_despesa' => $compra->categoria_despesa ?? '',
+            'descricao_despesa' => $descricaoDespesa,
+            'valor_despesa'     => number_format((float) $compra->valor_total, 2, '.', ''),
+        ];
+
+        $this->editingCompraId = $id;
+        $this->showEditModal = true;
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->editingCompraId = null;
+        $this->editCanEditFinancial = false;
+        $this->editForm = [
+            'tipo'              => '',
+            'data_compra'       => '',
+            'fornecedor_id'     => '',
+            'observacoes'       => '',
+            'categoria_despesa' => '',
+            'descricao_despesa' => '',
+            'valor_despesa'     => '',
+        ];
+        $this->resetValidation();
+    }
+
+    public function saveEditCompra(): void
+    {
+        $compra = Compra::query()->with('contasPagar')->findOrFail($this->editingCompraId);
+
+        $allPendente = $compra->contasPagar->count() === 0
+            || $compra->contasPagar->every(fn ($c) => $c->status === 'pendente');
+        $canEditFinancial = $compra->tipo === 'despesa' && $allPendente;
+
+        $rules = [
+            'editForm.data_compra'   => ['required', 'date'],
+            'editForm.fornecedor_id' => ['nullable', 'integer', 'exists:fornecedores,id'],
+            'editForm.observacoes'   => ['nullable', 'string', 'max:2000'],
+        ];
+
+        if ($canEditFinancial) {
+            $rules['editForm.categoria_despesa'] = ['required', 'string', Rule::in(array_keys(self::CATEGORIAS_DESPESA))];
+            $rules['editForm.descricao_despesa'] = ['required', 'string', 'max:500'];
+            $rules['editForm.valor_despesa']     = ['required', 'numeric', 'gt:0'];
+        }
+
+        $this->validate($rules);
+
+        $fornecedorId = ($this->editForm['fornecedor_id'] !== '' && $this->editForm['fornecedor_id'] !== null)
+            ? (int) $this->editForm['fornecedor_id']
+            : null;
+
+        DB::transaction(function () use ($compra, $canEditFinancial, $fornecedorId) {
+            $compra->update([
+                'data_compra'   => $this->editForm['data_compra'],
+                'fornecedor_id' => $fornecedorId,
+                'observacoes'   => $this->editForm['observacoes'] !== '' ? $this->editForm['observacoes'] : null,
+            ]);
+
+            if ($canEditFinancial) {
+                $newValor = (float) $this->editForm['valor_despesa'];
+                $compra->update([
+                    'categoria_despesa' => $this->editForm['categoria_despesa'],
+                    'valor_total'       => $newValor,
+                ]);
+
+                $newCategoryName = self::CATEGORIAS_DESPESA[$this->editForm['categoria_despesa']];
+                $newDescBase     = $newCategoryName . ': ' . $this->editForm['descricao_despesa'];
+                $parcelas        = $compra->contasPagar->count();
+
+                if ($parcelas > 0) {
+                    $valorBase = round($newValor / $parcelas, 4);
+                    $acumulado = 0.0;
+
+                    foreach ($compra->contasPagar->sortBy('data_vencimento')->values() as $i => $conta) {
+                        $num        = $i + 1;
+                        $valorParc  = $num < $parcelas ? $valorBase : round($newValor - $acumulado, 4);
+                        $acumulado += $valorParc;
+                        $newDesc    = $parcelas > 1 ? "{$newDescBase} - Parcela {$num}/{$parcelas}" : $newDescBase;
+                        $conta->update([
+                            'descricao'      => $newDesc,
+                            'valor_original' => $valorParc,
+                            'valor_aberto'   => $valorParc,
+                            'fornecedor_id'  => $fornecedorId,
+                        ]);
+                    }
+                }
+            } else {
+                $compra->contasPagar->each(fn ($c) => $c->update(['fornecedor_id' => $fornecedorId]));
+            }
+        });
+
+        session()->flash('status', 'Compra atualizada com sucesso.');
+        $this->closeEditModal();
+        $this->resetPage();
+    }
+
+    public function deleteCompra(int $id): void
+    {
+        $compra = Compra::query()->with(['contasPagar', 'itens'])->findOrFail($id);
+
+        if ($compra->contasPagar->where('status', 'pago')->isNotEmpty()) {
+            session()->flash('error', 'Nao e possivel excluir: esta compra possui contas ja pagas.');
+            return;
+        }
+
+        if ($compra->tipo === 'compra') {
+            $compraItemIds = $compra->itens->pluck('id');
+            $consumido = InsumoLote::query()
+                ->whereIn('compra_item_id', $compraItemIds)
+                ->whereColumn('quantidade_saldo', '<', 'quantidade_entrada')
+                ->exists();
+
+            if ($consumido) {
+                session()->flash('error', 'Nao e possivel excluir: estoque desta compra ja foi parcialmente consumido em producoes.');
+                return;
+            }
+        }
+
+        DB::transaction(function () use ($compra) {
+            $compra->contasPagar()->delete();
+
+            if ($compra->tipo === 'compra') {
+                $insumoIds = $compra->itens->pluck('insumo_id')->unique()->values();
+
+                foreach ($compra->itens as $item) {
+                    InsumoLote::query()->where('compra_item_id', $item->id)->delete();
+                }
+
+                $compra->itens()->delete();
+
+                $fifoService = app(InsumoFifoService::class);
+                foreach ($insumoIds as $insumoId) {
+                    $insumo = Insumo::query()->find($insumoId);
+                    if ($insumo) {
+                        $fifoService->recalcularInsumo($insumo);
+                    }
+                }
+            }
+
+            $compra->delete();
+        });
+
+        if ($this->detailsCompraId === $id) {
+            $this->closeDetailsModal();
+        }
+
+        if ($this->editingCompraId === $id) {
+            $this->closeEditModal();
+        }
+
+        session()->flash('status', 'Compra excluida com sucesso.');
+        $this->resetPage();
     }
 
     public function addItemLinha(): void

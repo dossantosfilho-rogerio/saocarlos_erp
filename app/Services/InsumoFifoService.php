@@ -107,6 +107,11 @@ class InsumoFifoService
         ];
     }
 
+    public function recalcularInsumo(Insumo $insumo): void
+    {
+        $this->recalcularEstoqueECusto($insumo);
+    }
+
     protected function recalcularEstoqueECusto(Insumo $insumo): void
     {
         $lotes = InsumoLote::query()

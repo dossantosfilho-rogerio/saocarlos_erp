@@ -36,6 +36,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="rounded-lg border border-[#F2C8C3] bg-[#FDECEA] px-4 py-3 text-sm text-[#8A3A2A]">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <section class="rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Historico de Compras</h3>
 
@@ -95,7 +101,28 @@
                             </div>
                         </dl>
 
-                        <div class="mt-4 flex justify-end">
+                        <div class="mt-4 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                wire:click="openEditModal({{ $compra->id }})"
+                                wire:loading.attr="disabled"
+                                wire:target="openEditModal({{ $compra->id }})"
+                                class="rounded-md border border-[#DCCFB7] px-3 py-1.5 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <span wire:loading.remove wire:target="openEditModal({{ $compra->id }})">Editar</span>
+                                <span wire:loading.inline wire:target="openEditModal({{ $compra->id }})">...</span>
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="deleteCompra({{ $compra->id }})"
+                                wire:loading.attr="disabled"
+                                wire:target="deleteCompra({{ $compra->id }})"
+                                onclick="confirm('Deseja excluir esta compra? Esta acao nao pode ser desfeita.') || event.stopImmediatePropagation()"
+                                class="rounded-md border border-[#F2C8C3] px-3 py-1.5 text-xs font-medium text-[#9A4030] transition hover:bg-[#FDECEA] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <span wire:loading.remove wire:target="deleteCompra({{ $compra->id }})">Excluir</span>
+                                <span wire:loading.inline wire:target="deleteCompra({{ $compra->id }})">...</span>
+                            </button>
                             <button
                                 type="button"
                                 wire:click="openDetailsModal({{ $compra->id }})"
@@ -316,6 +343,104 @@
                         <button type="submit" wire:loading.attr="disabled" wire:target="salvarCompra" class="rounded-lg bg-[#2D5A1B] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
                             <span wire:loading.remove wire:target="salvarCompra">Salvar Compra</span>
                             <span wire:loading.inline wire:target="salvarCompra">Salvando...</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    @endif
+
+    @if($showEditModal)
+        <div class="fixed inset-0 z-40 bg-[#1A1A1A]/50" wire:click="closeEditModal"></div>
+
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <section class="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-xl">
+                <div class="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Editar Compra #{{ $editingCompraId }}</h3>
+                        <p class="mt-1 text-xs text-[#8A7A60]">
+                            {{ $editForm['tipo'] === 'despesa' ? 'Despesa' : 'Compra de Insumos' }}
+                        </p>
+                    </div>
+                    <button type="button" wire:click="closeEditModal" class="rounded-md px-2 py-1 text-[#8A7A60] hover:bg-[#F7F3EA]">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form wire:submit="saveEditCompra" class="space-y-4" wire:click.stop>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Data da Compra</label>
+                            <input type="datetime-local" wire:model="editForm.data_compra" class="w-full rounded-lg border border-[#DCCFB7] px-3 py-2 text-sm">
+                            @error('editForm.data_compra') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Fornecedor</label>
+                            <select wire:model="editForm.fornecedor_id" class="w-full rounded-lg border border-[#DCCFB7] bg-white px-3 py-2 text-sm">
+                                <option value="">Sem fornecedor</option>
+                                @foreach($fornecedoresAtivos as $fornecedor)
+                                    <option value="{{ $fornecedor->id }}">{{ $fornecedor->nome }}</option>
+                                @endforeach
+                            </select>
+                            @error('editForm.fornecedor_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Observacoes</label>
+                        <textarea rows="2" wire:model="editForm.observacoes" class="w-full rounded-lg border border-[#DCCFB7] px-3 py-2 text-sm"></textarea>
+                        @error('editForm.observacoes') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    @if($editForm['tipo'] === 'despesa')
+                        @if($editCanEditFinancial)
+                            <div class="rounded-lg border border-[#F5E0D5] bg-[#FDF7F4] p-4 space-y-3">
+                                <p class="text-sm font-semibold text-[#8C4B27]">Dados da Despesa</p>
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Categoria</label>
+                                        <select wire:model="editForm.categoria_despesa" class="w-full rounded-lg border border-[#DCCFB7] bg-white px-3 py-2 text-sm">
+                                            <option value="">Selecione...</option>
+                                            @foreach($categoriasDespesa as $key => $label)
+                                                <option value="{{ $key }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('editForm.categoria_despesa') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Valor (R$)</label>
+                                        <input type="number" step="0.01" min="0.01" wire:model="editForm.valor_despesa" class="w-full rounded-lg border border-[#DCCFB7] px-3 py-2 text-sm">
+                                        @error('editForm.valor_despesa') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-[#6D7D63]">Descricao</label>
+                                    <input type="text" wire:model="editForm.descricao_despesa" class="w-full rounded-lg border border-[#DCCFB7] px-3 py-2 text-sm">
+                                    @error('editForm.descricao_despesa') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                                </div>
+                            </div>
+                        @else
+                            <div class="rounded-lg border border-[#EFE7D9] bg-[#FFFBF0] px-4 py-3 text-sm text-[#7A6030]">
+                                Os campos financeiros (categoria, valor, descricao) nao podem ser editados pois esta despesa ja possui contas pagas.
+                            </div>
+                        @endif
+                    @else
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FFFBF0] px-4 py-3 text-sm text-[#7A6030]">
+                            Os itens e valores de compras de insumos nao podem ser editados pois afetam o controle de estoque FIFO. Para correcoes, exclua e recadastre a compra (se nenhum estoque foi consumido).
+                        </div>
+                    @endif
+
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" wire:click="closeEditModal" wire:loading.attr="disabled" wire:target="closeEditModal,saveEditCompra"
+                            class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm font-medium text-[#6D7D63] hover:bg-[#F7F3EA] disabled:opacity-60">
+                            Cancelar
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="saveEditCompra"
+                            class="rounded-lg bg-[#2D5A1B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234716] disabled:opacity-60">
+                            <span wire:loading.remove wire:target="saveEditCompra">Salvar Alteracoes</span>
+                            <span wire:loading.inline wire:target="saveEditCompra">Salvando...</span>
                         </button>
                     </div>
                 </form>
