@@ -6,6 +6,7 @@ use App\Models\Cliente;
 use App\Models\ContaReceber;
 use App\Models\Produto;
 use App\Models\Venda;
+use App\Models\VendaItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -19,6 +20,11 @@ class Index extends Component
 
     public bool $showFormModal = false;
     public string $search = '';
+
+    // ── Cancelar / Excluir ──────────────────────────────────────────────────
+    public bool $showCancelarConfirm = false;
+    public bool $showExcluirConfirm  = false;
+    public ?int $actionVendaId       = null;
 
     public array $form = [
         'data_venda' => '',
@@ -253,6 +259,85 @@ class Index extends Component
         session()->flash('status', 'Venda registrada, contas a receber geradas e estoque atualizado.');
         $this->closeFormModal();
         $this->resetPage();
+    }
+
+    // ── Cancelar ────────────────────────────────────────────────────────────
+
+    public function promptCancelar(int $vendaId): void
+    {
+        $this->actionVendaId      = $vendaId;
+        $this->showCancelarConfirm = true;
+    }
+
+    public function cancelarVenda(): void
+    {
+        $venda = Venda::query()->with(['itens.produto', 'contasReceber'])->findOrFail($this->actionVendaId);
+
+        if ($venda->status === 'cancelada') {
+            session()->flash('error', 'Esta venda já está cancelada.');
+            $this->showCancelarConfirm = false;
+            return;
+        }
+
+        $contasRecebidas = $venda->contasReceber->filter(fn ($c) => $c->status === 'recebido');
+        if ($contasRecebidas->isNotEmpty()) {
+            session()->flash('error', 'Não é possível cancelar: existem ' . $contasRecebidas->count() . ' parcela(s) já recebida(s).');
+            $this->showCancelarConfirm = false;
+            return;
+        }
+
+        DB::transaction(function () use ($venda) {
+            foreach ($venda->itens as $item) {
+                $produto = Produto::query()->lockForUpdate()->findOrFail($item->produto_id);
+                $produto->update([
+                    'estoque_atual' => (float) $produto->estoque_atual + (float) $item->quantidade,
+                ]);
+            }
+
+            $venda->contasReceber()->where('status', 'pendente')->update(['status' => 'cancelado']);
+            $venda->update(['status' => 'cancelada']);
+        });
+
+        session()->flash('status', 'Venda #' . $venda->id . ' cancelada. Estoque restaurado.');
+        $this->showCancelarConfirm = false;
+        $this->actionVendaId       = null;
+    }
+
+    // ── Excluir ─────────────────────────────────────────────────────────────
+
+    public function promptExcluir(int $vendaId): void
+    {
+        $this->actionVendaId     = $vendaId;
+        $this->showExcluirConfirm = true;
+    }
+
+    public function excluirVenda(): void
+    {
+        $venda = Venda::query()->with('contasReceber')->findOrFail($this->actionVendaId);
+
+        if ($venda->status !== 'cancelada') {
+            session()->flash('error', 'Cancele a venda antes de excluí-la.');
+            $this->showExcluirConfirm = false;
+            return;
+        }
+
+        DB::transaction(function () use ($venda) {
+            $venda->contasReceber()->delete();
+            VendaItem::query()->where('venda_id', $venda->id)->delete();
+            $venda->delete();
+        });
+
+        session()->flash('status', 'Venda excluída com sucesso.');
+        $this->showExcluirConfirm = false;
+        $this->actionVendaId       = null;
+        $this->resetPage();
+    }
+
+    public function cancelarPrompt(): void
+    {
+        $this->showCancelarConfirm = false;
+        $this->showExcluirConfirm  = false;
+        $this->actionVendaId       = null;
     }
 
     protected function resetForm(): void

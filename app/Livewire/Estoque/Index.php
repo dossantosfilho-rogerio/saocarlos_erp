@@ -3,7 +3,10 @@
 namespace App\Livewire\Estoque;
 
 use App\Models\Insumo;
+use App\Models\InsumoLote;
 use App\Models\Producao;
+use App\Models\ProducaoInsumo;
+use App\Models\ProducaoItem;
 use App\Models\Produto;
 use App\Services\InsumoFifoService;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +20,12 @@ class Index extends Component
     use WithPagination;
 
     public bool $showProducaoModal = false;
-
+    public bool $showProducaoDetailsModal = false;
+    public ?int $detailsProducaoId = null;
+    public bool $showHistoricoModal = false;
+    public ?int $historicoProdutoId = null;
+    public bool $showExcluirProducaoConfirm = false;
+    public ?int $excluirProducaoId = null;
     public string $search = '';
 
     public array $producaoForm = [
@@ -53,6 +61,30 @@ class Index extends Component
     {
         $this->showProducaoModal = false;
         $this->resetProducaoForm();
+    }
+
+    public function openProducaoDetailsModal(int $producaoId): void
+    {
+        $this->detailsProducaoId = $producaoId;
+        $this->showProducaoDetailsModal = true;
+    }
+
+    public function closeProducaoDetailsModal(): void
+    {
+        $this->showProducaoDetailsModal = false;
+        $this->detailsProducaoId = null;
+    }
+
+    public function openHistoricoModal(int $produtoId): void
+    {
+        $this->historicoProdutoId = $produtoId;
+        $this->showHistoricoModal = true;
+    }
+
+    public function closeHistoricoModal(): void
+    {
+        $this->showHistoricoModal = false;
+        $this->historicoProdutoId = null;
     }
 
     public function addItemLinha(): void
@@ -187,6 +219,84 @@ class Index extends Component
         $this->resetPage();
     }
 
+    // ── Excluir Produção ─────────────────────────────────────────────────────
+
+    public function promptExcluirProducao(int $producaoId): void
+    {
+        $this->excluirProducaoId          = $producaoId;
+        $this->showExcluirProducaoConfirm = true;
+    }
+
+    public function cancelarExcluirPrompt(): void
+    {
+        $this->showExcluirProducaoConfirm = false;
+        $this->excluirProducaoId          = null;
+    }
+
+    public function excluirProducao(): void
+    {
+        $producao = Producao::query()
+            ->with(['itens.produto', 'insumos.insumo'])
+            ->findOrFail($this->excluirProducaoId);
+
+        // Verificar se o estoque dos produtos comporta a reversão
+        foreach ($producao->itens as $item) {
+            $produto = $item->produto;
+            if (! $produto) {
+                continue;
+            }
+            if ((float) $produto->estoque_atual < (float) $item->quantidade_produzida) {
+                session()->flash('error', 'Não é possível excluir: o produto "' . $produto->nome . '" possui estoque atual (' . number_format((float) $produto->estoque_atual, 4, ',', '.') . ') menor que a quantidade produzida registrada (' . number_format((float) $item->quantidade_produzida, 4, ',', '.') . '). Parte do estoque pode ter sido vendido.');
+                $this->cancelarExcluirPrompt();
+                return;
+            }
+        }
+
+        $fifoService = app(InsumoFifoService::class);
+
+        DB::transaction(function () use ($producao, $fifoService) {
+            // Reverter estoque dos produtos produzidos
+            foreach ($producao->itens as $item) {
+                if (! $item->produto) {
+                    continue;
+                }
+                $item->produto->update([
+                    'estoque_atual' => (float) $item->produto->estoque_atual - (float) $item->quantidade_produzida,
+                ]);
+            }
+
+            // Devolver insumos consumidos via novo lote de correção
+            foreach ($producao->insumos as $insumoConsumo) {
+                if (! $insumoConsumo->insumo) {
+                    continue;
+                }
+                InsumoLote::query()->create([
+                    'insumo_id'          => $insumoConsumo->insumo_id,
+                    'compra_item_id'     => null,
+                    'data_entrada'       => now(),
+                    'quantidade_entrada' => (float) $insumoConsumo->quantidade_consumida,
+                    'quantidade_saldo'   => (float) $insumoConsumo->quantidade_consumida,
+                    'custo_unitario'     => (float) $insumoConsumo->custo_unitario,
+                ]);
+                $fifoService->recalcularInsumo($insumoConsumo->insumo);
+            }
+
+            // Apagar registros
+            ProducaoInsumo::query()->where('producao_id', $producao->id)->delete();
+            ProducaoItem::query()->where('producao_id', $producao->id)->delete();
+            $producao->delete();
+        });
+
+        // Fechar modal de detalhes se estava aberto para esta produção
+        if ($this->detailsProducaoId === $this->excluirProducaoId) {
+            $this->closeProducaoDetailsModal();
+        }
+
+        session()->flash('status', 'Produção #' . $producao->id . ' excluída. Insumos devolvidos ao estoque.');
+        $this->cancelarExcluirPrompt();
+        $this->resetPage();
+    }
+
     protected function resetProducaoForm(): void
     {
         $this->producaoForm = [
@@ -289,11 +399,39 @@ class Index extends Component
             ->limit(8)
             ->get();
 
+        $producaoDetalhes = null;
+        if ($this->showProducaoDetailsModal && $this->detailsProducaoId !== null) {
+            $producaoDetalhes = Producao::query()
+                ->with(['itens.produto', 'insumos.insumo'])
+                ->find($this->detailsProducaoId);
+            if ($producaoDetalhes === null) {
+                $this->closeProducaoDetailsModal();
+            }
+        }
+
+        $historicoProduto = null;
+        $historicoProducoes = collect();
+        if ($this->showHistoricoModal && $this->historicoProdutoId !== null) {
+            $historicoProduto = Produto::query()->find($this->historicoProdutoId);
+            if ($historicoProduto === null) {
+                $this->closeHistoricoModal();
+            } else {
+                $historicoProducoes = Producao::query()
+                    ->whereHas('itens', fn ($q) => $q->where('produto_id', $this->historicoProdutoId))
+                    ->with(['itens' => fn ($q) => $q->where('produto_id', $this->historicoProdutoId), 'insumos.insumo'])
+                    ->latest('data_producao')
+                    ->get();
+            }
+        }
+
         return view('livewire.estoque.index', [
-            'estoques' => $estoques,
-            'produtosAtivos' => $produtosAtivos,
-            'insumosAtivos' => $insumosAtivos,
-            'ultimasProducoes' => $ultimasProducoes,
+            'estoques'           => $estoques,
+            'produtosAtivos'     => $produtosAtivos,
+            'insumosAtivos'      => $insumosAtivos,
+            'ultimasProducoes'   => $ultimasProducoes,
+            'producaoDetalhes'   => $producaoDetalhes,
+            'historicoProduto'   => $historicoProduto,
+            'historicoProducoes' => $historicoProducoes,
         ]);
     }
 }

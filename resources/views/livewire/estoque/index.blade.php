@@ -36,6 +36,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="rounded-lg border border-[#F2C8C3] bg-[#FDECEA] px-4 py-3 text-sm text-[#9A4030]">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <section class="xl:col-span-2 rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
             <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Produtos com Estoque Positivo</h3>
@@ -55,6 +61,18 @@
                                 <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Saldo atual</p>
                                 <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ number_format((float) $produto->estoque_atual, 4, ',', '.') }} {{ $produto->unidade_padrao }}</p>
                             </div>
+                            <div class="mt-3 flex justify-end">
+                                <button
+                                    type="button"
+                                    wire:click="openHistoricoModal({{ $produto->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="openHistoricoModal({{ $produto->id }})"
+                                    class="rounded-md border border-[#DCCFB7] px-3 py-1.5 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="openHistoricoModal({{ $produto->id }})">Histórico de Produções</span>
+                                    <span wire:loading.inline wire:target="openHistoricoModal({{ $produto->id }})">...</span>
+                                </button>
+                            </div>
                         </article>
                     @empty
                         <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">
@@ -72,8 +90,34 @@
             <div class="space-y-2">
                 @forelse($ultimasProducoes as $producao)
                     <div class="rounded-lg border border-[#EFE7D9] bg-[#FAF7F0] p-3">
-                        <p class="text-sm font-semibold text-[#1A3A0A]">{{ \Carbon\Carbon::parse($producao->data_producao)->format('d/m/Y H:i') }}</p>
-                        <p class="text-xs text-[#8A7A60] mt-1">Quantidade total em kg produzida: {{ number_format((float) $producao->total_insumos_consumidos, 4, ',', '.') }}</p>
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <p class="text-sm font-semibold text-[#1A3A0A]">{{ \Carbon\Carbon::parse($producao->data_producao)->format('d/m/Y H:i') }}</p>
+                                <p class="text-xs text-[#8A7A60] mt-1">Total consumido: {{ number_format((float) $producao->total_insumos_consumidos, 4, ',', '.') }}</p>
+                            </div>
+                            <div class="flex shrink-0 flex-col gap-1">
+                                <button
+                                    type="button"
+                                    wire:click="openProducaoDetailsModal({{ $producao->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="openProducaoDetailsModal({{ $producao->id }})"
+                                    class="rounded-md border border-[#DCCFB7] px-2.5 py-1 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="openProducaoDetailsModal({{ $producao->id }})">Detalhes</span>
+                                    <span wire:loading.inline wire:target="openProducaoDetailsModal({{ $producao->id }})">...</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    wire:click="promptExcluirProducao({{ $producao->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="promptExcluirProducao({{ $producao->id }})"
+                                    class="rounded-md border border-[#F2C8C3] px-2.5 py-1 text-xs font-medium text-[#9A4030] transition hover:bg-[#FDECEA] disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="promptExcluirProducao({{ $producao->id }})">Excluir</span>
+                                    <span wire:loading.inline wire:target="promptExcluirProducao({{ $producao->id }})">...</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 @empty
                     <p class="text-sm text-[#8A7A60]">Nenhuma producao registrada.</p>
@@ -195,6 +239,215 @@
                     </div>
                 </form>
             </section>
+        </div>
+    @endif
+
+    @if($showProducaoDetailsModal && $producaoDetalhes)
+        <div class="fixed inset-0 z-40 bg-[#1A1A1A]/50" wire:click="closeProducaoDetailsModal"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <section class="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-xl" wire:click.stop>
+                <div class="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Detalhes da Produção #{{ $producaoDetalhes->id }}</h3>
+                        <p class="mt-1 text-xs text-[#8A7A60]">{{ $producaoDetalhes->data_producao?->format('d/m/Y H:i') }}</p>
+                    </div>
+                    <button type="button" wire:click="closeProducaoDetailsModal" class="rounded-md px-2 py-1 text-[#8A7A60] hover:bg-[#F7F3EA]">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Total Insumos Consumidos</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ number_format((float) $producaoDetalhes->total_insumos_consumidos, 4, ',', '.') }}</p>
+                        </div>
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Custo Total</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $producaoDetalhes->insumos->sum('custo_total'), 2, ',', '.') }}</p>
+                        </div>
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FCFAF4] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Produtos Produzidos</p>
+                            <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ $producaoDetalhes->itens->count() }}</p>
+                        </div>
+                    </div>
+
+                    @if($producaoDetalhes->observacoes)
+                        <div class="rounded-lg border border-[#EFE7D9] bg-[#FFFEFA] p-3">
+                            <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Observações</p>
+                            <p class="mt-1 text-sm text-[#4F5D45]">{{ $producaoDetalhes->observacoes }}</p>
+                        </div>
+                    @endif
+
+                    <div class="rounded-lg border border-[#EFE7D9] bg-[#FAF7F0] p-4">
+                        <p class="mb-3 text-sm font-semibold text-[#1A3A0A]">Produtos Produzidos</p>
+                        <div class="space-y-2">
+                            @forelse($producaoDetalhes->itens as $item)
+                                <div class="grid grid-cols-1 gap-2 rounded-lg border border-[#E8DECE] bg-white p-3 sm:grid-cols-3">
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Produto</p>
+                                        <p class="mt-1 text-sm font-medium text-[#1A3A0A]">{{ $item->produto?->nome ?: 'Produto removido' }}</p>
+                                        <p class="text-xs text-[#8A7A60]">{{ $item->produto?->sku ?: '' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Quantidade</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">{{ number_format((float) $item->quantidade_produzida, 4, ',', '.') }} {{ $item->unidade }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Custo Unitário</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">R$ {{ number_format($producaoDetalhes->itens->count() > 0 && (float)$producaoDetalhes->insumos->sum('custo_total') > 0 && $producaoDetalhes->itens->sum('quantidade_produzida') > 0 ? (float)$producaoDetalhes->insumos->sum('custo_total') / (float)$producaoDetalhes->itens->sum('quantidade_produzida') : 0, 4, ',', '.') }}/{{ $item->unidade }}</p>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-sm text-[#8A7A60]">Nenhum item registrado.</p>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border border-[#EFE7D9] bg-[#FAF7F0] p-4">
+                        <p class="mb-3 text-sm font-semibold text-[#1A3A0A]">Insumos Consumidos</p>
+                        <div class="space-y-2">
+                            @forelse($producaoDetalhes->insumos as $insumo)
+                                <div class="grid grid-cols-1 gap-2 rounded-lg border border-[#E8DECE] bg-white p-3 sm:grid-cols-4">
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Insumo</p>
+                                        <p class="mt-1 text-sm font-medium text-[#1A3A0A]">{{ $insumo->insumo?->nome ?: 'Insumo removido' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Quantidade</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">{{ number_format((float) $insumo->quantidade_consumida, 4, ',', '.') }} {{ $insumo->unidade }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Custo Unitário</p>
+                                        <p class="mt-1 text-sm text-[#4F5D45]">R$ {{ number_format((float) $insumo->custo_unitario, 4, ',', '.') }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Custo Total</p>
+                                        <p class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $insumo->custo_total, 2, ',', '.') }}</p>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-sm text-[#8A7A60]">Nenhum insumo registrado.</p>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            wire:click="promptExcluirProducao({{ $producaoDetalhes->id }})"
+                            wire:loading.attr="disabled"
+                            wire:target="promptExcluirProducao({{ $producaoDetalhes->id }})"
+                            class="rounded-lg border border-[#F2C8C3] px-4 py-2 text-sm font-medium text-[#9A4030] hover:bg-[#FDECEA] disabled:opacity-60"
+                        >Excluir Produção</button>
+                        <button type="button" wire:click="closeProducaoDetailsModal" class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm">Fechar</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if($showHistoricoModal && $historicoProduto)
+        <div class="fixed inset-0 z-40 bg-[#1A1A1A]/50" wire:click="closeHistoricoModal"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <section class="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-xl" wire:click.stop>
+                <div class="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Histórico de Produções</h3>
+                        <p class="mt-1 text-xs text-[#8A7A60]">{{ $historicoProduto->nome }}{{ $historicoProduto->sku ? ' — ' . $historicoProduto->sku : '' }}</p>
+                    </div>
+                    <button type="button" wire:click="closeHistoricoModal" class="rounded-md px-2 py-1 text-[#8A7A60] hover:bg-[#F7F3EA]">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    @forelse($historicoProducoes as $producao)
+                        @php
+                            $itemProduto = $producao->itens->first();
+                            $custoTotal  = (float) $producao->insumos->sum('custo_total');
+                            $qtdTotal    = (float) $producao->itens->sum('quantidade_produzida');
+                            $custoUnit   = $qtdTotal > 0 ? $custoTotal / $qtdTotal : 0;
+                        @endphp
+                        <div class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-[#1A3A0A]">Produção #{{ $producao->id }}</p>
+                                    <p class="text-xs text-[#8A7A60]">{{ $producao->data_producao?->format('d/m/Y H:i') }}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    wire:click="openProducaoDetailsModal({{ $producao->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="openProducaoDetailsModal({{ $producao->id }})"
+                                    class="shrink-0 rounded-md border border-[#DCCFB7] px-2.5 py-1 text-xs font-medium text-[#4F5D45] transition hover:bg-[#F7F3EA] disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="openProducaoDetailsModal({{ $producao->id }})">Ver detalhes</span>
+                                    <span wire:loading.inline wire:target="openProducaoDetailsModal({{ $producao->id }})">...</span>
+                                </button>
+                            </div>
+                            <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Quantidade Produzida</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">{{ number_format((float) $itemProduto?->quantidade_produzida, 4, ',', '.') }} {{ $itemProduto?->unidade }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Custo Total</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format($custoTotal, 2, ',', '.') }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-[11px] font-medium uppercase tracking-wide text-[#8A7A60]">Custo Unitário</dt>
+                                    <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format($custoUnit, 4, ',', '.') }}/{{ $itemProduto?->unidade }}</dd>
+                                </div>
+                            </dl>
+                            @if($producao->observacoes)
+                                <p class="mt-2 text-xs text-[#8A7A60]">{{ $producao->observacoes }}</p>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">
+                            Nenhuma produção registrada para este produto.
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <button type="button" wire:click="closeHistoricoModal" class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm">Fechar</button>
+                </div>
+            </section>
+        </div>
+    @endif
+
+    @if($showExcluirProducaoConfirm && $excluirProducaoId)
+        <div class="fixed inset-0 z-[55] bg-[#1A1A1A]/60" wire:click="cancelarExcluirPrompt"></div>
+        <div class="fixed inset-0 z-[56] flex items-center justify-center p-4">
+            <div class="w-full max-w-md rounded-xl border border-[#E0D8C8] bg-white p-6 shadow-xl" wire:click.stop>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-[#9A4030]">Excluir Produção #{{ $excluirProducaoId }}</h3>
+                <p class="mt-2 text-sm text-[#4F5D45]">Esta ação é <strong>irreversível</strong>. O sistema irá:</p>
+                <ul class="mt-1 list-inside list-disc space-y-1 text-sm text-[#4F5D45]">
+                    <li>Subtrair a quantidade produzida do estoque de cada produto</li>
+                    <li>Devolver os insumos consumidos ao estoque (via lote de correção)</li>
+                    <li>Apagar todos os registros desta produção</li>
+                </ul>
+                <p class="mt-3 text-sm font-medium text-[#9A4030]">Atenção: a exclusão será bloqueada se algum produto já teve parte do estoque vendido.</p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" wire:click="cancelarExcluirPrompt" class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm">Voltar</button>
+                    <button
+                        type="button"
+                        wire:click="excluirProducao"
+                        wire:loading.attr="disabled"
+                        wire:target="excluirProducao"
+                        class="rounded-lg bg-[#9A4030] px-4 py-2 text-sm font-semibold text-white hover:bg-[#7D3328] disabled:opacity-60"
+                    >
+                        <span wire:loading.remove wire:target="excluirProducao">Excluir Definitivamente</span>
+                        <span wire:loading.inline wire:target="excluirProducao">Excluindo...</span>
+                    </button>
+                </div>
+            </div>
         </div>
     @endif
 

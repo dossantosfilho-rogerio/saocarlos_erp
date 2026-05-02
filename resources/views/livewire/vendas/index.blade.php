@@ -36,6 +36,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="rounded-lg border border-[#F2C8C3] bg-[#FDECEA] px-4 py-3 text-sm text-[#9A4030]">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <section class="rounded-xl border border-[#E0D8C8] bg-white p-5 shadow-sm">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-[#3A5C2A]">Historico de Vendas</h3>
 
@@ -56,15 +62,21 @@
                             ->sortBy('data_vencimento')
                             ->first()?->data_vencimento;
                     @endphp
-                    <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm">
+                    <article class="rounded-xl border border-[#E8DECE] bg-white p-4 shadow-sm {{ $venda->status === 'cancelada' ? 'opacity-60' : '' }}">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="font-semibold text-[#1A3A0A]">#{{ $venda->id }}</p>
                                 <p class="text-xs text-[#8A7A60]">{{ \Carbon\Carbon::parse($venda->data_venda)->format('d/m/Y H:i') }}</p>
                             </div>
-                            <span class="inline-flex rounded-full bg-[#FFF7ED] px-2 py-0.5 text-xs font-medium text-[#A65A2A]">
-                                {{ $statusResumo }}{{ $totalParcelas > 1 ? ' (' . $totalParcelas . 'x)' : '' }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                @if($venda->status === 'cancelada')
+                                    <span class="inline-flex rounded-full bg-[#F5EDE8] px-2 py-0.5 text-xs font-medium text-[#9A4030]">CANCELADA</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-[#FFF7ED] px-2 py-0.5 text-xs font-medium text-[#A65A2A]">
+                                        {{ $statusResumo }}{{ $totalParcelas > 1 ? ' (' . $totalParcelas . 'x)' : '' }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
 
                         <dl class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -85,6 +97,26 @@
                                 <dd class="mt-1 text-sm font-semibold text-[#1A3A0A]">R$ {{ number_format((float) $venda->valor_total, 2, ',', '.') }}</dd>
                             </div>
                         </dl>
+
+                        <div class="mt-3 flex justify-end gap-2">
+                            @if($venda->status !== 'cancelada')
+                                <button
+                                    type="button"
+                                    wire:click="promptCancelar({{ $venda->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="promptCancelar({{ $venda->id }})"
+                                    class="rounded-md border border-[#F2C8C3] px-3 py-1.5 text-xs font-medium text-[#9A4030] transition hover:bg-[#FDECEA] disabled:opacity-60"
+                                >Cancelar Venda</button>
+                            @else
+                                <button
+                                    type="button"
+                                    wire:click="promptExcluir({{ $venda->id }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="promptExcluir({{ $venda->id }})"
+                                    class="rounded-md border border-[#F2C8C3] px-3 py-1.5 text-xs font-medium text-[#9A4030] transition hover:bg-[#FDECEA] disabled:opacity-60"
+                                >Excluir</button>
+                            @endif
+                        </div>
                     </article>
                 @empty
                     <div class="col-span-full rounded-xl border border-dashed border-[#DCCFB7] bg-white px-4 py-8 text-center text-sm text-[#8A7A60]">
@@ -247,6 +279,58 @@
                     </div>
                 </form>
             </section>
+        </div>
+    @endif
+
+    @if($showCancelarConfirm && $actionVendaId)
+        <div class="fixed inset-0 z-40 bg-[#1A1A1A]/50" wire:click="cancelarPrompt"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="w-full max-w-md rounded-xl border border-[#E0D8C8] bg-white p-6 shadow-xl" wire:click.stop>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-[#9A4030]">Cancelar Venda #{{ $actionVendaId }}</h3>
+                <p class="mt-2 text-sm text-[#4F5D45]">O cancelamento irá:</p>
+                <ul class="mt-1 list-inside list-disc space-y-1 text-sm text-[#4F5D45]">
+                    <li>Restaurar o estoque de todos os produtos vendidos</li>
+                    <li>Marcar as contas a receber pendentes como canceladas</li>
+                </ul>
+                <p class="mt-3 text-sm font-medium text-[#9A4030]">Atenção: contas já recebidas bloqueiam o cancelamento.</p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" wire:click="cancelarPrompt" class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm">Voltar</button>
+                    <button
+                        type="button"
+                        wire:click="cancelarVenda"
+                        wire:loading.attr="disabled"
+                        wire:target="cancelarVenda"
+                        class="rounded-lg bg-[#9A4030] px-4 py-2 text-sm font-semibold text-white hover:bg-[#7D3328] disabled:opacity-60"
+                    >
+                        <span wire:loading.remove wire:target="cancelarVenda">Confirmar Cancelamento</span>
+                        <span wire:loading.inline wire:target="cancelarVenda">Cancelando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($showExcluirConfirm && $actionVendaId)
+        <div class="fixed inset-0 z-40 bg-[#1A1A1A]/50" wire:click="cancelarPrompt"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="w-full max-w-md rounded-xl border border-[#E0D8C8] bg-white p-6 shadow-xl" wire:click.stop>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-[#9A4030]">Excluir Venda #{{ $actionVendaId }}</h3>
+                <p class="mt-2 text-sm text-[#4F5D45]">Esta ação é <strong>irreversível</strong>. Todos os registros da venda, itens e contas a receber serão permanentemente removidos.</p>
+                <p class="mt-2 text-xs text-[#8A7A60]">Somente vendas canceladas podem ser excluídas.</p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" wire:click="cancelarPrompt" class="rounded-lg border border-[#DCCFB7] px-4 py-2 text-sm">Voltar</button>
+                    <button
+                        type="button"
+                        wire:click="excluirVenda"
+                        wire:loading.attr="disabled"
+                        wire:target="excluirVenda"
+                        class="rounded-lg bg-[#9A4030] px-4 py-2 text-sm font-semibold text-white hover:bg-[#7D3328] disabled:opacity-60"
+                    >
+                        <span wire:loading.remove wire:target="excluirVenda">Excluir Definitivamente</span>
+                        <span wire:loading.inline wire:target="excluirVenda">Excluindo...</span>
+                    </button>
+                </div>
+            </div>
         </div>
     @endif
 

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'cliente_id',
     'valor_total',
     'observacoes',
+    'status',
 ])]
 class Venda extends Model
 {
