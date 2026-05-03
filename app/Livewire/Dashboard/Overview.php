@@ -19,11 +19,13 @@ class Overview extends Component
 
         $vendas_semana = (float) DB::table('vendas')
             ->whereBetween('data_venda', [$weekStart, $weekEnd])
+            ->where('status', '!=', 'cancelada')
             ->sum('valor_total');
 
         $vendas_mes = (float) DB::table('vendas')
             ->whereYear('data_venda', $year)
             ->whereMonth('data_venda', $month)
+            ->where('status', '!=', 'cancelada')
             ->sum('valor_total');
 
         $volume_kg = (float) DB::table('producao_items')
@@ -37,6 +39,7 @@ class Overview extends Component
             ->join('produtos', 'venda_items.produto_id', '=', 'produtos.id')
             ->whereYear('vendas.data_venda', $year)
             ->whereMonth('vendas.data_venda', $month)
+            ->where('vendas.status', '!=', 'cancelada')
             ->sum(DB::raw('venda_items.quantidade * produtos.custo_unitario'));
 
         $despesas_mes = (float) DB::table('compras')
