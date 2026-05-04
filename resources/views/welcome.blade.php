@@ -447,7 +447,7 @@
                     <p>Tempero equilibrado, textura suculenta e sabor marcante inspirado na tradição mineira.</p>
                 </article>
                 <article class="feature-card">
-                    <h3>Fabrico Diário</h3>
+                    <h3>Fabricação Diária</h3>
                     <p>Lotes frescos preparados diariamente para manter padrão e consistência em cada entrega.</p>
                 </article>
                 <article class="feature-card">
