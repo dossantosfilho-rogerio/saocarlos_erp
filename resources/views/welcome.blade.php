@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sao Carlos | Linguica Mineira Artesanal</title>
-    <meta name="description" content="Linguica mineira artesanal com entrega em todo o estado do Rio de Janeiro.">
+    <title>São Carlos | Linguiça Mineira Artesanal</title>
+    <meta name="description" content="Linguiça mineira artesanal com entrega em todo o estado do Rio de Janeiro.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
