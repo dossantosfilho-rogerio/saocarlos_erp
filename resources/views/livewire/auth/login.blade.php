@@ -9,7 +9,7 @@
             {{-- Header verde --}}
             <div class="bg-[#2D5A1B] px-8 pt-10 pb-8 flex flex-col items-center">
                 {{-- Logo --}}
-                <img src="{{ asset('images/logo.jpg') }}" alt="São Carlos" class="h-24 w-24 mb-4 drop-shadow-lg rounded-full object-cover">
+                <img src="{{ asset('images/logo.jpeg') }}" alt="São Carlos" class="h-24 w-24 mb-4 drop-shadow-lg rounded-full object-cover">
 
                 <h1 class="text-white text-2xl font-bold tracking-widest uppercase" style="font-family: 'Montserrat', sans-serif;">São Carlos</h1>
                 <p class="text-[#A8D090] text-xs tracking-wider uppercase mt-1">Frigorífico · Produtos Cárneos</p>

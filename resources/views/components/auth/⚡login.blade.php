@@ -41,8 +41,8 @@ new class extends Component
             {{-- Header verde --}}
             <div class="bg-[#2D5A1B] px-8 pt-10 pb-8 flex flex-col items-center">
                 {{-- Logo --}}
-                @if(file_exists(public_path('images/logo.png')))
-                    <img src="{{ asset('images/logo.png') }}" alt="São Carlos" class="h-24 w-auto mb-4 drop-shadow-lg">
+                @if(file_exists(public_path('images/logo.jpeg')))
+                    <img src="{{ asset('images/logo.jpeg') }}" alt="São Carlos" class="h-24 w-auto mb-4 drop-shadow-lg">
                 @else
                     {{-- Fallback: ícone SVG de porco estilizado --}}
                     <div class="mb-4 bg-white/10 rounded-full p-4">

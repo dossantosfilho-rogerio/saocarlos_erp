@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>São Carlos | Linguiça Mineira Artesanal</title>
+    <link rel="icon" href="{{ asset('images/logo.jpeg') }}" type="image/jpeg">
+    <meta name="keywords" content="linguiça mineira, linguiça artesanal, frigorífico Nova Iguaçu, produtos cárneos, entrega no Rio de Janeiro, linguiça fresca, tempero caseiro, qualidade em carnes">
+    <meta name="author" content="São Carlos Frigorífico">
+    <meta name="robots" content="index, follow">
     <meta name="description" content="Linguiça mineira artesanal com entrega em todo o estado do Rio de Janeiro.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -403,7 +407,7 @@
                     da nossa fábrica para a sua mesa.
                 </h1>
                 <p>
-                    Sabor caseiro, tempero equilibrado e qualidade em cada gomo.
+                    Sabor caseiro, tempero equilibrado e qualidade em cada mordida.
                     Atendemos varejo e atacado com entrega rápida em todo o estado do Rio de Janeiro.
                 </p>
                 <div class="cta-row">
@@ -415,10 +419,10 @@
             <div class="hero-card">
                 <div class="hero-card-grid">
                     <div class="hero-photo">
-                        <img src="/images/linguica-ilustrativa.avif" alt="Linguiça artesanal Nova Iguaçu" loading="eager" onerror="this.onerror=null;this.src='/images/logo.jpg';">
+                        <img src="/images/linguica-ilustrativa.avif" alt="Linguiça artesanal Nova Iguaçu" loading="eager" onerror="this.onerror=null;this.src='/images/logo.jpeg';">
                     </div>
                     <div>
-                        <img class="logo-center" src="/images/logo.jpg" alt="Logo Nova Iguaçu" loading="eager">
+                        <img class="logo-center" src="/images/logo.jpeg" alt="Logo Nova Iguaçu" loading="eager">
                         <div class="info-pills" style="margin-top: 0.9rem;">
                             <span class="pill">100% artesanal</span>
                             <span class="pill">Selo de qualidade</span>
@@ -447,7 +451,7 @@
                     <p>Lotes frescos preparados diariamente para manter padrão e consistência em cada entrega.</p>
                 </article>
                 <article class="feature-card">
-                    <h3>Atendimento B2B e B2C</h3>
+                    <h3>Atendimento</h3>
                     <p>Atendemos restaurantes, mercados, casas de carnes e consumidores finais no mesmo nível de cuidado.</p>
                 </article>
                 <article class="feature-card">

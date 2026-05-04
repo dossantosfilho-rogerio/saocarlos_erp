@@ -29,8 +29,8 @@
         >
             {{-- Logo / Marca --}}
             <div class="flex items-center gap-3 border-b border-white/10 px-4 py-5">
-                @if(file_exists(public_path('images/logo.jpg')))
-                    <img src="{{ asset('images/logo.jpg') }}" alt="São Carlos"
+                @if(file_exists(public_path('images/logo.jpeg')))
+                    <img src="{{ asset('images/logo.jpeg') }}" alt="São Carlos"
                          class="h-9 w-9 rounded-full object-cover shrink-0 ring-2 ring-white/30">
                 @else
                     <div class="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
